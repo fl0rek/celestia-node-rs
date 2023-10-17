@@ -612,7 +612,7 @@ where
                     self.swarm.behaviour_mut().kademlia.add_address(&peer, addr);
                 }
             }
-            _ => trace!("Unhandled Kademlia event"),
+            e => trace!("Unhandled Kademlia event: {e:?}"),
         }
 
         Ok(())

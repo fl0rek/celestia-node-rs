@@ -7,3 +7,5 @@ pub use crate::wasm::*;
 mod native;
 #[cfg(not(target_arch = "wasm32"))]
 pub use crate::native::*;
+
+mod common;

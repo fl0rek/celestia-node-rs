@@ -58,6 +58,7 @@ mod imp {
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        tracing::debug!("spawn");
         wasm_bindgen_futures::spawn_local(future);
     }
 
