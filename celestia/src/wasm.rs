@@ -7,7 +7,7 @@ use futures_timer::Delay;
 use libp2p::identity;
 use wasm_bindgen::prelude::*;
 
-use crate::common::{network_bootnodes, network_genesis, network_id, Network};
+use crate::common::{ network_genesis, network_id, Network};
 
 #[wasm_bindgen]
 pub async fn run(bootnode: &str) -> Result<(), JsError> {
@@ -50,10 +50,8 @@ pub async fn run(bootnode: &str) -> Result<(), JsError> {
 
     // We have nothing else to do, but we want to keep main alive
     loop {
-        let now = Delay::new(Duration::from_secs(1)).await;
+        Delay::new(Duration::from_secs(1)).await;
         tracing::info!("running");
     }
-
-    Ok(())
 }
 

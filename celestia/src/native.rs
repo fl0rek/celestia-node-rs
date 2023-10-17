@@ -6,12 +6,12 @@ use anyhow::{bail, Context, Result};
 use celestia_node::node::{Node, NodeConfig};
 use celestia_node::store::SledStore;
 use celestia_rpc::prelude::*;
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use libp2p::{identity, multiaddr::Protocol, Multiaddr};
 use tokio::time::sleep;
 use tracing::info;
 
-use crate::common::{network_bootnodes, network_genesis, network_id, Network};
+use crate::common::{network_genesis, network_id, Network};
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -119,3 +119,36 @@ fn init_tracing() -> tracing_appender::non_blocking::WorkerGuard {
 
     guard
 }
+
+pub(crate) async fn network_bootnodes(network: Network) -> Result<Vec<Multiaddr>> {
+    match network {
+        Network::Arabica => Ok(
+            [
+                "/dns4/da-bridge.celestia-arabica-10.com/tcp/2121/p2p/12D3KooWM3e9MWtyc8GkP8QRt74Riu17QuhGfZMytB2vq5NwkWAu",
+                "/dns4/da-bridge-2.celestia-arabica-10.com/tcp/2121/p2p/12D3KooWKj8mcdiBGxQRe1jqhaMnh2tGoC3rPDmr5UH2q8H4WA9M",
+                "/dns4/da-full-1.celestia-arabica-10.com/tcp/2121/p2p/12D3KooWBWkgmN7kmJSFovVrCjkeG47FkLGq7yEwJ2kEqNKCsBYk",
+                "/dns4/da-full-2.celestia-arabica-10.com/tcp/2121/p2p/12D3KooWRByRF67a2kVM2j4MP5Po3jgTw7H2iL2Spu8aUwPkrRfP",
+            ]
+            .iter()
+            .map(|s| s.parse().unwrap())
+            .collect()
+        ),
+        Network::Mocha => Ok(
+            [
+                "/ip4/127.0.0.1/udp/2121/quic/p2p/12D3KooWCSdbDpir7iBvwrkbcofgiZX6ww9r2ED5k8srsP1tV1Da",
+                //"/ip4/127.0.0.1/tcp/2121/p2p/12D3KooWCSdbDpir7iBvwrkbcofgiZX6ww9r2ED5k8srsP1tV1Da",
+                "/dns4/da-bridge-mocha-4.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWCBAbQbJSpCpCGKzqz3rAN4ixYbc63K68zJg9aisuAajg",
+                "/dns4/da-bridge-mocha-4-2.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWK6wJkScGQniymdWtBwBuU36n6BRXp9rCDDUD6P5gJr3G",
+                "/dns4/da-full-1-mocha-4.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWCUHPLqQXZzpTx1x3TAsdn3vYmTNDhzg66yG8hqoxGGN8",
+                "/dns4/da-full-2-mocha-4.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWR6SHsXPkkvhCRn6vp1RqSefgaT1X1nMNvrVjU2o3GoYy",
+            ]
+            .iter()
+            .map(|s| s.parse().unwrap())
+            .collect()
+        ),
+        Network::Private => Ok(
+            fetch_bridge_multiaddrs("ws://localhost:26658").await?
+        )
+    }
+}
+
