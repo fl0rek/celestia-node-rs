@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use celestia_types::hash::Hash;
 use celestia_types::ExtendedHeader;
@@ -24,10 +22,10 @@ struct ExtendedHeaderEntry {
 
 // SendWrapper usage is safe in wasm because we're running on single thread
 #[derive(Debug)]
-pub struct IndexedDbStore(Arc<SendWrapper<Rexie>>);
+pub struct IndexedDbStore(SendWrapper<Rexie>);
 
 impl IndexedDbStore {
-    pub async fn new_with_name(name: &str) -> rexie::Result<Self> {
+    pub async fn new(name: &str) -> Result<IndexedDbStore> {
         let rexie = Rexie::builder(name)
             .version(DB_VERSION)
             .add_object_store(
@@ -38,16 +36,15 @@ impl IndexedDbStore {
                     .add_index(Index::new(HEIGHT_INDEX_NAME, "height").unique(true)),
             )
             .build()
-            .await?;
-        Ok(Self(Arc::new(SendWrapper::new(rexie))))
+            .await
+            .map_err(|e| StoreError::OpenFailed(e.to_string()))?;
+        Ok(Self(SendWrapper::new(rexie)))
     }
 
-    pub async fn new() -> rexie::Result<Self> {
-        Self::new_with_name("CELESTIA").await
-    }
-
-    pub async fn clear(self) -> rexie::Result<()> {
-        Rexie::delete(&self.0.name()).await
+    pub async fn delete_db(self) -> rexie::Result<()> {
+        let name = self.0.name();
+        self.0.take().close();
+        Rexie::delete(&name).await
     }
 
     pub async fn get_head(&self) -> Result<ExtendedHeader> {
@@ -55,15 +52,18 @@ impl IndexedDbStore {
             .0
             .transaction(&[HEADER_STORE_NAME], TransactionMode::ReadOnly)?;
 
-        let header_store = tx.store(HEADER_STORE_NAME)?;
-        let header_get_result = header_store.get_all(None, Some(1), None, Some(Direction::Prev));
+        let store = tx.store(HEADER_STORE_NAME)?;
 
-        let header_get_result = header_get_result.await?;
-        let key_value_result = header_get_result.first().ok_or(StoreError::NotFound)?;
+        let (_, raw_value) = store
+            .get_all(None, Some(1), None, Some(Direction::Prev))
+            .await?
+            .first()
+            .ok_or(StoreError::NotFound)?
+            .to_owned();
 
-        let header_entry: ExtendedHeaderEntry = from_value(key_value_result.1.clone())?;
+        let entry: ExtendedHeaderEntry = from_value(raw_value)?;
 
-        Ok(header_entry.header)
+        Ok(entry.header)
     }
 
     pub async fn get_head_height(&self) -> Result<u64> {
@@ -79,8 +79,7 @@ impl IndexedDbStore {
 
         let height_key = to_value(&height)?;
 
-        let header_get_result = height_index.get(&height_key);
-        let header_get_result = header_get_result.await?;
+        let header_get_result = height_index.get(&height_key).await?;
 
         // querying unset key returns empty value
         if header_get_result.is_falsy() {
@@ -101,8 +100,7 @@ impl IndexedDbStore {
 
         let hash_key = to_value(&hash)?;
 
-        let header_get_result = hash_index.get(&hash_key);
-        let header_get_result = header_get_result.await?;
+        let header_get_result = hash_index.get(&hash_key).await?;
 
         if header_get_result.is_falsy() {
             return Err(StoreError::NotFound);
@@ -448,7 +446,7 @@ async fn concurrent() {
     #[named]
     #[wasm_bindgen_test]
     async fn test_large_db() {
-        let s = IndexedDbStore::new_with_name(function_name!())
+        let s = IndexedDbStore::new(function_name!())
             .await
             .expect("creating test store failed");
 
@@ -483,7 +481,7 @@ async fn concurrent() {
         }
         drop(original_store);
 
-        let reopened_store = IndexedDbStore::new_with_name(function_name!())
+        let reopened_store = IndexedDbStore::new(function_name!())
             .await
             .expect("failed to reopen store");
 
@@ -510,7 +508,7 @@ async fn concurrent() {
 
         original_headers.append(&mut new_headers);
 
-        let reopened_store = IndexedDbStore::new_with_name(function_name!())
+        let reopened_store = IndexedDbStore::new(function_name!())
             .await
             .expect("failed to reopen store");
 
@@ -527,13 +525,31 @@ async fn concurrent() {
         }
     }
 
+    #[named]
+    #[wasm_bindgen_test]
+    async fn test_delete_db() {
+        let (original_store, _) = gen_filled_store(3, function_name!()).await;
+        assert_eq!(original_store.get_head_height().await.unwrap(), 3);
+
+        original_store.delete_db().await.unwrap();
+
+        let same_name_store = IndexedDbStore::new(function_name!())
+            .await
+            .expect("creating test store failed");
+
+        assert!(matches!(
+            same_name_store.get_head_height().await,
+            Err(StoreError::NotFound)
+        ));
+    }
+
     // open IndexedDB with unique per-test name to avoid interference and make cleanup easier
     pub async fn gen_filled_store(
         amount: u64,
         name: &str,
     ) -> (IndexedDbStore, ExtendedHeaderGenerator) {
         Rexie::delete(name).await.unwrap();
-        let s = IndexedDbStore::new_with_name(name)
+        let s = IndexedDbStore::new(name)
             .await
             .expect("creating test store failed");
         let mut gen = ExtendedHeaderGenerator::new();

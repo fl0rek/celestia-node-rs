@@ -9,7 +9,7 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot, watch};
 use tracing::{info, info_span, instrument, warn, Instrument};
 
-use crate::executor::{spawn, Interval};
+use crate::executor::{spawn, Interval, sleep};
 use crate::p2p::{P2p, P2pError};
 use crate::store::{Store, StoreError};
 use crate::utils::OneshotSenderExt;
@@ -170,8 +170,12 @@ where
                     self.on_header_sub_message().await;
                     self.fetch_next_batch().await;
                 }
-                Some(cmd) = self.cmd_rx.recv() => {
-                    self.on_cmd(cmd).await;
+                cmd = self.cmd_rx.recv() => {
+                    if let Some(cmd) = cmd {
+                        self.on_cmd(cmd).await;
+                    } else {
+                        return;
+                    }
                 }
                 Some(res) = self.headers_rx.recv() => {
                     self.on_fetch_next_batch_result(res).await;
@@ -218,7 +222,12 @@ where
                             return;
                         }
                         Err(e) => {
-                            warn!("Intialization of subjective head failed: {e}. Trying again.")
+                            warn!("Intialization of subjective head failed: {e}. Trying again.");
+                            #[cfg(target_arch = "wasm32")]
+                            {
+                            let x = send_wrapper::SendWrapper::new(sleep(Duration::from_secs(10)));
+                            x.await;
+                            }
                         }
                     }
                 }
@@ -369,12 +378,12 @@ where
 mod tests {
     use super::*;
     use crate::{
+        executor::sleep,
         store::InMemoryStore,
         test_utils::{gen_filled_store, MockP2pHandle},
     };
     use celestia_types::test_utils::ExtendedHeaderGenerator;
     use std::time::Duration;
-    use tokio::time::sleep;
 
     #[cfg(not(target_arch = "wasm32"))]
     use tokio::test as async_test;

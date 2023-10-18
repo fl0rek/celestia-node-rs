@@ -3,12 +3,10 @@ use std::time::Duration;
 use celestia_proto::p2p::pb::{header_request::Data, HeaderRequest};
 use celestia_types::{hash::Hash, test_utils::ExtendedHeaderGenerator, ExtendedHeader};
 use libp2p::identity::{self, Keypair};
-use tokio::{
-    sync::{mpsc, watch},
-    time::timeout,
-};
+use tokio::sync::{mpsc, watch};
 
 use crate::{
+    executor::timeout,
     node::NodeConfig,
     p2p::{P2pCmd, P2pError},
     peer_tracker::PeerTrackerInfo,
@@ -37,7 +35,7 @@ pub fn test_node_config() -> NodeConfig<InMemoryStore> {
         network_id: "private".to_string(),
         genesis_hash: None,
         p2p_local_keypair: node_keypair,
-        p2p_bootstrap_peers: vec![],
+        p2p_bootnodes: vec![],
         p2p_listen_on: vec![],
         store: InMemoryStore::new(),
     }

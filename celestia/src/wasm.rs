@@ -27,12 +27,12 @@ pub async fn run(bootnode: &str) -> Result<(), JsError> {
     bootnode
     ];
 
-    let store = IndexedDbStore::new().await.unwrap();
+    let store = IndexedDbStore::new(&network_id).await.unwrap();
     let node = Node::new(NodeConfig {
         network_id,
         genesis_hash,
         p2p_local_keypair,
-        p2p_bootstrap_peers: boot_peers
+        p2p_bootnodes: boot_peers
             .iter()
             .map(|addr| addr.parse().unwrap())
             .collect::<Vec<_>>(),

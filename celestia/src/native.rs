@@ -15,19 +15,19 @@ use crate::common::{network_genesis, network_id, Network};
 
 #[derive(Debug, Parser)]
 struct Args {
-    /// Network to connect
+    /// Network to connect.
     #[arg(short, long, value_enum, default_value_t)]
     network: Network,
 
-    /// Listening addresses
+    /// Listening addresses. Can be used multiple times.
     #[arg(short, long = "listen")]
     listen_addrs: Vec<Multiaddr>,
 
-    /// Bootnode
+    /// Bootnode multiaddr, including peer id. Can be used multiple times.
     #[arg(short, long = "bootnode")]
     bootnodes: Vec<Multiaddr>,
 
-    /// Persistent header store path
+    /// Persistent header store path.
     #[arg(short, long = "store")]
     store: Option<PathBuf>,
 }
@@ -39,7 +39,7 @@ pub async fn run() -> Result<()> {
 
     let p2p_local_keypair = identity::Keypair::generate_ed25519();
 
-    let p2p_bootstrap_peers = if args.bootnodes.is_empty() {
+    let p2p_bootnodes = if args.bootnodes.is_empty() {
         network_bootnodes(args.network).await?
     } else {
         args.bootnodes
@@ -62,7 +62,7 @@ pub async fn run() -> Result<()> {
         network_id,
         genesis_hash,
         p2p_local_keypair,
-        p2p_bootstrap_peers,
+        p2p_bootnodes,
         p2p_listen_on: args.listen_addrs,
         store,
     })
