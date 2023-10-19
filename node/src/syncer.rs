@@ -9,7 +9,7 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot, watch};
 use tracing::{info, info_span, instrument, warn, Instrument};
 
-use crate::executor::{spawn, Interval, sleep};
+use crate::executor::{sleep, spawn, Interval};
 use crate::p2p::{P2p, P2pError};
 use crate::store::{Store, StoreError};
 use crate::utils::OneshotSenderExt;
@@ -225,8 +225,9 @@ where
                             warn!("Intialization of subjective head failed: {e}. Trying again.");
                             #[cfg(target_arch = "wasm32")]
                             {
-                            let x = send_wrapper::SendWrapper::new(sleep(Duration::from_secs(10)));
-                            x.await;
+                                let x =
+                                    send_wrapper::SendWrapper::new(sleep(Duration::from_secs(10)));
+                                x.await;
                             }
                         }
                     }

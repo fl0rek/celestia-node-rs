@@ -135,8 +135,10 @@ pub(crate) async fn network_bootnodes(network: Network) -> Result<Vec<Multiaddr>
         ),
         Network::Mocha => Ok(
             [
-                "/ip4/127.0.0.1/udp/2121/quic/p2p/12D3KooWCSdbDpir7iBvwrkbcofgiZX6ww9r2ED5k8srsP1tV1Da",
+                //"/ip4/127.0.0.1/udp/2121/quic/p2p/12D3KooWCSdbDpir7iBvwrkbcofgiZX6ww9r2ED5k8srsP1tV1Da",
                 //"/ip4/127.0.0.1/tcp/2121/p2p/12D3KooWCSdbDpir7iBvwrkbcofgiZX6ww9r2ED5k8srsP1tV1Da",
+                "/ip4/40.85.94.176/udp/2121/quic-v1/p2p/12D3KooWQUYAApYb4DJnhS1QmAwRr5HRvUeHJYocchCpwEhCtDGu",
+                "/ip4/40.85.94.176/udp/2121/quic-v1/webtransport/certhash/uEiBr4-sr95BpqfA-ttpjiLdjbGABhTvX8oxrTXf3Ubfibw/certhash/uEiBSVgyze9xG1UbbNuTwyEUWLPq7l2N9pyeQSs3OtEhGRg/p2p/12D3KooWQUYAApYb4DJnhS1QmAwRr5HRvUeHJYocchCpwEhCtDGu",
                 "/dns4/da-bridge-mocha-4.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWCBAbQbJSpCpCGKzqz3rAN4ixYbc63K68zJg9aisuAajg",
                 "/dns4/da-bridge-mocha-4-2.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWK6wJkScGQniymdWtBwBuU36n6BRXp9rCDDUD6P5gJr3G",
                 "/dns4/da-full-1-mocha-4.celestia-mocha.com/udp/2121/quic/p2p/12D3KooWCUHPLqQXZzpTx1x3TAsdn3vYmTNDhzg66yG8hqoxGGN8",
@@ -151,4 +153,3 @@ pub(crate) async fn network_bootnodes(network: Network) -> Result<Vec<Multiaddr>
         )
     }
 }
-

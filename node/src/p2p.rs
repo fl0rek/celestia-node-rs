@@ -387,6 +387,7 @@ where
         ));
 
         let header_sub_topic = gossipsub_ident_topic(&args.network_id, "/header-sub/v0.0.1");
+        info!("pre init gossipsub {header_sub_topic}");
         let gossipsub = init_gossipsub(&args, [&header_sub_topic])?;
 
         let kademlia = init_kademlia(&args)?;
@@ -563,7 +564,7 @@ where
                 // Start a deeper lookup for other peers
                 kademlia.get_closest_peers(peer_id);
             }
-            _ => trace!("Unhandled identify event"),
+            e => trace!("Unhandled identify event: {e:?}"),
         }
 
         Ok(())
@@ -577,6 +578,7 @@ where
                 message_id,
                 ..
             } => {
+                trace!("gossipsup: {message:?} {message_id}");
                 let Some(peer) = message.source else {
                     // Validation mode is `strict` so this will never happen
                     return;
@@ -598,7 +600,7 @@ where
                     .gossipsub
                     .report_message_validation_result(&message_id, &peer, acceptance);
             }
-            _ => trace!("Unhandled gossipsub event"),
+            e => trace!("Unhandled gossipsub event: {e:?}"),
         }
     }
 
@@ -764,6 +766,7 @@ where
         gossipsub::Behaviour::new(message_authenticity, config).map_err(P2pError::GossipsubInit)?;
 
     for topic in topics {
+        info!("Subscribing to {topic}");
         gossipsub.subscribe(topic)?;
     }
 

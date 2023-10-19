@@ -1,14 +1,17 @@
 use anyhow::Result;
 use axum::body;
+use axum::extract::State;
 use axum::http::Uri;
 use axum::http::{header, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::Router;
-use axum::extract::State;
-use tokio::{spawn, time};
 use clap::Parser;
 use libp2p::Multiaddr;
+use tokio::{spawn, time};
+use std::net::SocketAddr;
+
+use celestia::common::{Network, network_id, WasmNodeArgs};
 
 const BIND_ADDR: &str = "127.0.0.1:9876";
 
@@ -18,20 +21,34 @@ struct WasmPackage;
 
 #[derive(Debug, Clone, Parser)]
 struct Args {
+    /// Network to connect.
+    #[arg(short, long, value_enum, default_value_t)]
+    network: Network,
+
+    /// Bootnode multiaddr, including peer id. Can be used multiple times.
     #[arg(long)]
-    webtransport: Multiaddr
+    bootnode: Vec<Multiaddr>,
+
+    /// Address to serve app at
+    #[arg(long, default_value = BIND_ADDR)]
+    listen_addr: SocketAddr,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
 
+    let state = WasmNodeArgs {
+        network: args.network,
+        bootnodes: args.bootnode
+    };
+
     let app = Router::new()
         .route("/", get(serve_index_html))
         .fallback(serve_wasm_pkg)
-        .with_state(args);
+        .with_state(state);
 
-    spawn(axum::Server::bind(&BIND_ADDR.parse()?).serve(app.into_make_service()));
+    spawn(axum::Server::bind(&args.listen_addr).serve(app.into_make_service()));
 
     loop {
         time::sleep(time::Duration::from_secs(1)).await;
@@ -45,33 +62,35 @@ async fn serve_wasm_pkg(uri: Uri) -> Result<Response, StatusCode> {
         Ok(Response::builder()
             .header(header::CONTENT_TYPE, mime.as_ref())
             .body(body::boxed(body::Full::from(content.data)))
-            .unwrap()) // XXX
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
     } else {
         Err(StatusCode::NOT_FOUND)
     }
 }
 
-async fn serve_index_html(state: State<Args>) -> Result<impl IntoResponse, StatusCode> {
-    let bootnode = state.webtransport.clone();
+async fn serve_index_html(state: State<WasmNodeArgs>) -> Result<impl IntoResponse, StatusCode> {
+    //let bootnode = state.bootnodes.clone();
+    //let network = network_id(state.network);
+    let args = serde_json::to_string(&state.0).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Html(format!(
         r#"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8" />
-                    <title>celestia-node-rs</title>
-                    <script type="module"">
-                        Error.stackTraceLimit = 99;
-                        import init, {{ run }} from "/celestia.js";
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8" />
+            <title>celestia-node-rs</title>
+            <script type="module"">
+                Error.stackTraceLimit = 99;
+                import init, {{ run }} from "/celestia.js";
 
-                        // initialize wasm
-                        await init();
-                        // run our entrypoint with params from the env
-                        await run("{bootnode}");
-                    </script>
-                </head>
-                <body></body>
-                </html>
-                "#
+                // initialize wasm
+                await init();
+                // run our entrypoint with params from the env
+                await run('{args}');
+            </script>
+        </head>
+        <body></body>
+        </html>
+        "#
     )))
 }

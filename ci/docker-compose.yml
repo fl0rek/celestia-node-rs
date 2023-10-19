@@ -1,5 +1,7 @@
 services:
   validator:
+    environment:
+      QUIC_GO_DISABLE_GSO: true
     image: validator
     platform: "linux/amd64"
     build:
@@ -9,6 +11,8 @@ services:
       - shared:/shared
 
   bridge:
+    environment:
+      QUIC_GO_DISABLE_GSO: true
     image: bridge
     platform: "linux/amd64"
     build:

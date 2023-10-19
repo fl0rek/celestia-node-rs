@@ -17,12 +17,12 @@ tendermint-proto = { git = "https://github.com/eigerco/celestia-tendermint-rs.gi
 #tendermint-proto = { path = "../celestia-tendermint-rs/proto" }
 
 [patch.crates-io]
-wasm-bindgen-futures = { path = "../wasm-bindgen/crates/futures" }
-wasm-bindgen = { path = "../wasm-bindgen/" }
-wasm-bindgen-cli = { path = "../wasm-bindgen/crates/cli" }
-js-sys = { path = "../wasm-bindgen/crates/js-sys" }
-web-sys = { path = "../wasm-bindgen/crates/web-sys" }
-gloo-timers = { path = "../gloo/crates/timers" }
+#wasm-bindgen-futures = { path = "../wasm-bindgen/crates/futures" }
+#wasm-bindgen = { path = "../wasm-bindgen/" }
+#js-sys = { path = "../wasm-bindgen/crates/js-sys" }
+#web-sys = { path = "../wasm-bindgen/crates/web-sys" }
+#gloo-timers = { path = "../gloo/crates/timers" }
+#gloo-timers2 = { path = "../gloo2/crates/timers", package = "gloo-timers"}
 
 [patch.'https://github.com/eigerco/nmt-rs.git']
 # Uncomment to apply local changes

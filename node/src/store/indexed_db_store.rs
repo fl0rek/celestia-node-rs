@@ -259,42 +259,39 @@ pub mod tests {
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
+    #[wasm_bindgen_test]
+    async fn concurrent() {
+        use gloo_timers::callback::Timeout;
+        use gloo_timers::future::{sleep, TimeoutFuture};
+        use std::time::Duration;
+        use wasm_bindgen_futures::wasm_bindgen::UnwrapThrowExt;
+        use wasm_bindgen_test::console_log;
 
+        wasm_bindgen_futures::spawn_local(async {
+            let a = TimeoutFuture::new(1000);
 
-#[wasm_bindgen_test]
-async fn concurrent() {
-    use wasm_bindgen_futures::wasm_bindgen::UnwrapThrowExt;
-    use gloo_timers::future::{sleep, TimeoutFuture};
-    use gloo_timers::callback::Timeout;
-    use std::time::Duration;
-    use wasm_bindgen_test::console_log;
-
-    wasm_bindgen_futures::spawn_local(async {
-        let a = TimeoutFuture::new(1000);
-
-        for i in 0..10 {
-            console_log!("X{i}");
-            sleep(Duration::from_millis(210)).await;
-        }
-        drop(a);
-    });
-
-    loop {
-    wasm_bindgen_futures::spawn_local(async {
-        let _timeout = Timeout::new(1000, || {
-            let x: Option<u32> = None;
-            x.unwrap_throw();
+            for i in 0..10 {
+                console_log!("X{i}");
+                sleep(Duration::from_millis(210)).await;
+            }
+            drop(a);
         });
 
-        for i in 0..10 {
-            console_log!("X{i}");
-            sleep(Duration::from_millis(200)).await;
-        }
-    });
-    sleep(Duration::from_millis(30)).await;
-    }
+        loop {
+            wasm_bindgen_futures::spawn_local(async {
+                let _timeout = Timeout::new(1000, || {
+                    let x: Option<u32> = None;
+                    x.unwrap_throw();
+                });
 
-}
+                for i in 0..10 {
+                    console_log!("X{i}");
+                    sleep(Duration::from_millis(200)).await;
+                }
+            });
+            sleep(Duration::from_millis(30)).await;
+        }
+    }
 
     #[named]
     #[wasm_bindgen_test]

@@ -48,7 +48,7 @@ main() {
   # Import the key with the coins
   import_shared_key
   # Initialize the bridge node
-  celestia bridge init --p2p.network "$P2P_NETWORK"
+  celestia bridge init --p2p.network "$P2P_NETWORK" --log.level DEBUG
   # Trust the private blockchain
   add_trusted_genesis
   # Start the bridge node
@@ -56,7 +56,8 @@ main() {
   celestia bridge start \
     --core.ip validator \
     --keyring.accname "$USER_NAME" \
-    --p2p.network "$P2P_NETWORK"
+    --p2p.network "$P2P_NETWORK" \
+    --log.level DEBUG
 }
 
 main
