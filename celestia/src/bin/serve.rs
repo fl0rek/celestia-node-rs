@@ -8,10 +8,10 @@ use axum::routing::get;
 use axum::Router;
 use clap::Parser;
 use libp2p::Multiaddr;
-use tokio::{spawn, time};
 use std::net::SocketAddr;
+use tokio::{spawn, time};
 
-use celestia::common::{Network, network_id, WasmNodeArgs};
+use celestia::common::{Network, WasmNodeArgs};
 
 const BIND_ADDR: &str = "127.0.0.1:9876";
 
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
 
     let state = WasmNodeArgs {
         network: args.network,
-        bootnodes: args.bootnode
+        bootnodes: args.bootnode,
     };
 
     let app = Router::new()
@@ -69,9 +69,8 @@ async fn serve_wasm_pkg(uri: Uri) -> Result<Response, StatusCode> {
 }
 
 async fn serve_index_html(state: State<WasmNodeArgs>) -> Result<impl IntoResponse, StatusCode> {
-    //let bootnode = state.bootnodes.clone();
-    //let network = network_id(state.network);
     let args = serde_json::to_string(&state.0).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     Ok(Html(format!(
         r#"
         <!DOCTYPE html>
