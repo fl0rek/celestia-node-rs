@@ -1,23 +1,128 @@
 use std::mem::size_of;
 
 use bytes::{BufMut, BytesMut};
+use celestia_proto::proof::pb::Proof as RawProof;
+use celestia_proto::share::p2p::shwap::Sample as RawSample;
 use cid::CidGeneric;
 use multihash::Multihash;
+use serde::{Deserialize, Serialize};
+use tendermint_proto::Protobuf;
 
 use crate::axis::{AxisId, AxisType};
 use crate::multihash::{HasCid, HasMultihash};
-use crate::DataAvailabilityHeader;
-use crate::{Error, Result};
+use crate::nmt::{NamespaceProof, NamespacedHashExt};
+use crate::{DataAvailabilityHeader, ExtendedDataSquare};
+use crate::{Error, Result, Share};
 
 const SAMPLE_ID_SIZE: usize = SampleId::size();
 pub const SAMPLE_ID_MULTIHASH_CODE: u64 = 0x7801;
 pub const SAMPLE_ID_CODEC: u64 = 0x7800;
 
 /// Represents particular sample along the axis on specific Data Square
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct SampleId {
     pub axis: AxisId,
     pub index: u16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SampleType {
+    DataSample,
+    ParitySample,
+}
+
+impl TryFrom<u8> for SampleType {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(SampleType::DataSample),
+            1 => Ok(SampleType::ParitySample),
+            n => Err(Error::InvalidAxis(n.into())), // TODO
+        }
+    }
+}
+
+impl From<SampleType> for u8 {
+    fn from(sample_type: SampleType) -> u8 {
+        match sample_type {
+            SampleType::DataSample => 0,
+            SampleType::ParitySample => 1,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(try_from = "RawSample", into = "RawSample")]
+pub struct Sample {
+    pub sample_id: SampleId,
+
+    pub sample_type: SampleType,
+    pub share: Share,
+    pub proof: NamespaceProof,
+}
+
+impl Sample {
+    pub fn new(
+        axis_type: AxisType,
+        index: usize,
+        dah: &DataAvailabilityHeader,
+        eds: &ExtendedDataSquare,
+        block_height: u64,
+    ) -> Result<Self> {
+        let square_len = dah.square_len();
+
+        let axis_index = index / square_len;
+        let share_index = index % square_len;
+
+        let shares = eds.axis(axis_type, axis_index, square_len);
+    }
+}
+
+impl Protobuf<RawSample> for Sample {}
+
+impl TryFrom<RawSample> for Sample {
+    type Error = Error;
+
+    fn try_from(sample: RawSample) -> Result<Sample, Self::Error> {
+        let Some(proof) = sample.sample_proof else {
+            return Err(Error::MissingProof);
+        };
+
+        let sample_id = SampleId::decode(&sample.sample_id)?;
+        let share = Share::from_raw(&sample.sample_share)?;
+        let sample_type = u8::try_from(sample.sample_type)
+            .map_err(|_| Error::InvalidAxis(sample.sample_type))?
+            .try_into()?;
+
+        Ok(Sample {
+            sample_id,
+            sample_type,
+            share,
+            proof: proof.try_into()?,
+        })
+    }
+}
+
+impl From<Sample> for RawSample {
+    fn from(sample: Sample) -> RawSample {
+        let mut sample_id_bytes = BytesMut::new();
+        sample.sample_id.encode(&mut sample_id_bytes);
+        let sample_proof = RawProof {
+            start: sample.proof.start_idx() as i64,
+            end: sample.proof.end_idx() as i64,
+            nodes: sample.proof.siblings().iter().map(|h| h.to_vec()).collect(),
+            leaf_hash: vec![], // this is an inclusion proof
+            is_max_namespace_ignored: true,
+        };
+
+        RawSample {
+            sample_id: sample_id_bytes.to_vec(),
+            sample_share: sample.share.to_vec(),
+            sample_type: u8::from(sample.sample_type) as i32,
+            sample_proof: Some(sample_proof),
+        }
+    }
 }
 
 impl SampleId {
@@ -25,7 +130,6 @@ impl SampleId {
     /// converted to row/col coordinates internally). Same location can be sampled row or
     /// column-wise, axis_type is used to distinguish that. Axis root hash is calculated from the
     /// DataAvailabilityHeader
-    #[allow(dead_code)] // unused for now
     pub fn new(
         axis_type: AxisType,
         index: usize,
@@ -115,7 +219,8 @@ impl<const S: usize> TryFrom<CidGeneric<S>> for SampleId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nmt::{NamespacedHash, NamespacedHashExt};
+    use crate::consts::appconsts::SHARE_SIZE;
+    use crate::nmt::{Namespace, NamespacedHash, NamespacedHashExt, HASH_SIZE, NS_SIZE};
 
     #[test]
     fn round_trip() {
@@ -200,5 +305,48 @@ mod tests {
             axis_err,
             Error::InvalidCidCodec(4321, SAMPLE_ID_CODEC)
         ));
+    }
+
+    #[test]
+    fn decode_sample_bytes() {
+        let bytes = include_bytes!("../test_data/shwap_samples/sample.data");
+        let mut msg = Sample::decode(&bytes[..]).unwrap();
+
+        assert_eq!(msg.sample_id.index, 100);
+        assert_eq!(msg.sample_id.axis.axis_type, AxisType::Col);
+        assert_eq!(msg.sample_id.axis.index, 64);
+        assert_eq!(msg.sample_id.axis.hash, [0xEF; HASH_SIZE]);
+        assert_eq!(msg.sample_id.axis.block_height, 255);
+
+        let ns = Namespace::new_v0(&[99]).unwrap();
+        assert_eq!(msg.share.namespace(), ns);
+        let data = [0xCD; SHARE_SIZE - NS_SIZE];
+        assert_eq!(msg.share.data(), data);
+
+        // /*
+        msg.sample_id.index = 100;
+        msg.sample_id.axis.axis_type = AxisType::Col;
+        msg.sample_id.axis.index = 64;
+        msg.sample_id.axis.hash = [0xEF; HASH_SIZE];
+        msg.sample_id.axis.block_height = 255;
+
+        /*
+        let mut i = 0;
+        //for share in &mut msg.shares {
+            let mut share = &mut msg.share;
+            let ns = Namespace::new_v0(&[99]).unwrap();
+
+            let data = [0xCD; crate::consts::appconsts::SHARE_SIZE];
+            share.data[..].copy_from_slice(&data);
+            share.data[..NS_SIZE].copy_from_slice(ns.as_bytes());
+
+            println!("{i} {:?}", share.namespace());
+            //i += 1;
+        //}
+
+        let mut file = std::fs::File::create("axis.data2").unwrap();
+        let bytes = msg.encode_vec().unwrap();
+        file.write_all(&bytes).unwrap();
+        */
     }
 }

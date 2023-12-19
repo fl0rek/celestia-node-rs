@@ -29,6 +29,8 @@ pub const NMT_ID_SIZE: usize = 2 * NS_SIZE + SHA256_HASH_SIZE;
 pub type NamespacedSha2Hasher = nmt_rs::NamespacedSha2Hasher<NS_SIZE>;
 pub type NamespacedHash = nmt_rs::NamespacedHash<NS_SIZE>;
 pub type Nmt = nmt_rs::NamespaceMerkleTree<MemDb<NamespacedHash>, NamespacedSha2Hasher, NS_SIZE>;
+//pub type NamespaceProof = nmt_rs::nmt_proof::NamespaceProof<crate::nmt::NamespacedSha2Hasher, NS_SIZE>;
+pub type Proof = nmt_rs::simple_merkle::proof::Proof<crate::nmt::NamespacedSha2Hasher>;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Namespace(nmt_rs::NamespaceId<NS_SIZE>);
@@ -432,8 +434,6 @@ mod tests {
         let left = NamespacedHash::with_min_and_max_ns(*ns1, *ns2);
         let right = NamespacedHash::with_min_and_max_ns(*ns0, *ns0);
 
-        //let multihash = Code::Sha256NamespaceFlagged;
-        //let digest_result = multihash.digest_nodes(&left, &right).unwrap_err();
         let result = (&left, &right).multihash().unwrap_err();
         assert!(matches!(result, Error::InvalidNmtNodeOrder));
     }
