@@ -15,12 +15,53 @@ use crate::utils::{fetch_bridge_info, new_connected_node};
 
 mod utils;
 
+use cid::CidGeneric;
+
+fn convert_cid<const INPUT_S: usize, const OUTPUT_S: usize>(
+    cid: &CidGeneric<INPUT_S>,
+) -> Option<CidGeneric<OUTPUT_S>> {
+    let hash = cid.hash();
+    let hash = multihash::Multihash::<OUTPUT_S>::wrap(hash.code(), hash.digest()).ok()?;
+    CidGeneric::new(cid.version(), cid.codec(), hash).ok()
+}
+
 #[tokio::test]
 async fn connects_to_the_go_bridge_node() {
     let node = new_connected_node().await;
 
     let info = node.network_info().await.unwrap();
     assert_eq!(info.num_peers(), 1);
+
+    use celestia_types::row::RowId;
+    let row_id = RowId::new(1, 1).unwrap();
+    let cid = cid::CidGeneric::<{RowId::size()}>::try_from(row_id).unwrap();
+    let a = node.mingle(convert_cid(&cid).unwrap()).await;
+    println!("sent request {a:?}");
+
+    use celestia_types::sample::SampleId;
+    let sample_id = SampleId { row : RowId::new(1, 2).unwrap(), index: 3 };
+    let cid = cid::CidGeneric::<{SampleId::size()}>::try_from(sample_id).unwrap();
+    let a = node.mingle(convert_cid(&cid).unwrap()).await;
+    println!("sent request {a:?}");
+
+    use celestia_types::namespaced_data::NamespacedDataId;
+    use celestia_types::nmt::Namespace;
+    let data_id = NamespacedDataId { row: RowId::new(5,6).unwrap(), namespace: Namespace::TRANSACTION };
+    let cid = cid::CidGeneric::<{NamespacedDataId::size()}>::try_from(data_id).unwrap();
+    let a = node.mingle(convert_cid(&cid).unwrap()).await;
+    println!("sent request {a:?}");
+
+
+    /*
+    use std::str::FromStr;
+    let cid = cid::CidGeneric::from_str("bagao4amb5yavv7777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777753oba7o7zdj6gy3m2i7n6isqyrznftfuds6nra3ate7wkdykrrmw").unwrap();
+    let a = node.mingle(cid).await;
+    println!("sent request {a:?}");
+    */
+
+    loop {
+        sleep(tokio::time::Duration::from_secs(1)).await;
+    }
 }
 
 #[tokio::test]

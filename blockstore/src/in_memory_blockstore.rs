@@ -18,6 +18,15 @@ impl<const MAX_MULTIHASH_SIZE: usize> InMemoryBlockstore<MAX_MULTIHASH_SIZE> {
         }
     }
 
+    pub fn dump(&self) {
+        println!("keys num: {}", self.map.len());
+            /*
+        for k in self.map.keys() {
+            println!("K- {k:?}");
+        }
+            */
+    }
+
     fn get_cid(&self, cid: &CidGeneric<MAX_MULTIHASH_SIZE>) -> Result<Option<Vec<u8>>> {
         Ok(self.map.get(cid).as_deref().cloned())
     }
@@ -30,10 +39,14 @@ impl<const MAX_MULTIHASH_SIZE: usize> InMemoryBlockstore<MAX_MULTIHASH_SIZE> {
 
         cid_entry.insert(data.to_vec());
 
+        self.dump();
+
         Ok(())
     }
 
     fn contains_cid(&self, cid: &CidGeneric<MAX_MULTIHASH_SIZE>) -> bool {
+        self.dump();
+
         self.map.contains_key(cid)
     }
 }

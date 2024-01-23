@@ -16,6 +16,15 @@ blockstore = { version = "0.1.0", path = "blockstore" }
 
 [patch.crates-io]
 # Uncomment to apply local changes
+#tendermint = { path = "../celestia-tendermint-rs/tendermint" }
+#tendermint-proto = { path = "../celestia-tendermint-rs/proto" }
+
+[patch.'https://github.com/eigerco/nmt-rs.git']
+# Uncomment to apply local changes
 #celestia-tendermint = { path = "../celestia-tendermint-rs/tendermint" }
 #celestia-tendermint-proto = { path = "../celestia-tendermint-rs/proto" }
 #nmt-rs = { path = "../nmt-rs" }
+
+#[patch.'https://github.com/eigerco/bitmingle.git']
+#bitmingle = { path = "../bitmingle" }
+

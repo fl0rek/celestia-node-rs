@@ -21,11 +21,13 @@ pub async fn fetch_bridge_info() -> (PeerId, Multiaddr) {
         .addrs
         .into_iter()
         .find(|ma| ma.protocol_stack().any(|protocol| protocol == "tcp"))
+        .map(|x| { println!("> {x:?}"); x})
         .expect("Bridge doesn't listen on tcp");
 
     if !ma.protocol_stack().any(|protocol| protocol == "p2p") {
         ma.push(Protocol::P2p(bridge_info.id.into()))
     }
+    //panic!("{:?}", bridge_info.clone());
 
     (bridge_info.id.into(), ma)
 }

@@ -18,6 +18,8 @@ use crate::peer_tracker::PeerTrackerInfo;
 use crate::store::{Store, StoreError};
 use crate::syncer::{Syncer, SyncerArgs, SyncerError, SyncingInfo};
 
+use crate::p2p::Cid;
+
 type Result<T, E = NodeError> = std::result::Result<T, E>;
 
 /// Representation of all the errors that can occur when interacting with the [`Node`].
@@ -181,6 +183,10 @@ where
     /// Get a synced header for the block with a given height.
     pub async fn get_header_by_height(&self, height: u64) -> Result<ExtendedHeader> {
         Ok(self.store.get_by_height(height).await?)
+    }
+
+    pub async fn mingle(&self, cid: Cid) -> Result<()> {
+        Ok(self.p2p.mingle(cid).await?)
     }
 
     /// Get synced headers from the given heights range.

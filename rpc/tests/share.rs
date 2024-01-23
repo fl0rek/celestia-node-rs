@@ -147,6 +147,8 @@ async fn get_eds() {
 
     let submitted_height = blob_submit(&client, &[blob]).await.unwrap();
 
+    println!("h: {submitted_height}");
+
     let header = client.header_get_by_height(submitted_height).await.unwrap();
 
     let eds = client.share_get_eds(&header).await.unwrap();

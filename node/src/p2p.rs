@@ -50,6 +50,9 @@ use crate::utils::{
 
 pub use crate::header_ex::HeaderExError;
 
+const CID_SIZE: usize = 124;
+pub type Cid = cid::CidGeneric<CID_SIZE>;
+
 // Minimal number of peers that we want to maintain connection to.
 // If we have fewer peers than that, we will try to reconnect / discover
 // more aggresively.
@@ -166,6 +169,9 @@ pub(crate) enum P2pCmd {
         peer_id: PeerId,
         is_trusted: bool,
     },
+    Mingle {
+        cid: Cid,
+    },
 }
 
 impl<S> P2p<S>
@@ -240,6 +246,10 @@ where
             .send(cmd)
             .await
             .map_err(|_| P2pError::WorkerDied)
+    }
+
+    pub async fn mingle(&self, cid: Cid) -> Result<()> {
+        self.send_command(P2pCmd::Mingle { cid }).await
     }
 
     /// Watcher for the latest verified network head headers announced on `header-sub`.
@@ -393,6 +403,7 @@ where
     S: Store + 'static,
 {
     autonat: autonat::Behaviour,
+    bitswap: bitmingle::BitswapBehaviour<99, blockstore::InMemoryBlockstore<99>>,
     ping: ping::Behaviour,
     identify: identify::Behaviour,
     header_ex: HeaderExBehaviour<S>,
@@ -423,6 +434,16 @@ where
     ) -> Result<Self, P2pError> {
         let local_peer_id = PeerId::from(args.local_keypair.public());
 
+        let blockstore = blockstore::InMemoryBlockstore::new();
+
+        let bitswap = bitmingle::BitswapBehaviour::new( bitmingle::BitswapConfig {
+            protocol_prefix: Some("/celestia/private".to_string()),
+            store: blockstore,
+            client: bitmingle::ClientConfig {
+                set_send_dont_have: false
+            }
+            }).unwrap();
+
         let autonat = autonat::Behaviour::new(local_peer_id, autonat::Config::default());
         let ping = ping::Behaviour::new(ping::Config::default());
 
@@ -444,6 +465,7 @@ where
 
         let behaviour = Behaviour {
             autonat,
+            bitswap,
             ping,
             identify,
             gossipsub,
@@ -513,6 +535,7 @@ where
     async fn on_swarm_event(&mut self, ev: SwarmEvent<BehaviourEvent<S>>) -> Result<()> {
         match ev {
             SwarmEvent::Behaviour(ev) => match ev {
+                BehaviourEvent::Bitswap(ev) => println!("ev: {ev:?}"),
                 BehaviourEvent::Identify(ev) => self.on_identify_event(ev).await?,
                 BehaviourEvent::Gossipsub(ev) => self.on_gossip_sub_event(ev).await,
                 BehaviourEvent::Kademlia(ev) => self.on_kademlia_event(ev).await?,
@@ -543,6 +566,10 @@ where
 
     async fn on_cmd(&mut self, cmd: P2pCmd) -> Result<()> {
         match cmd {
+            P2pCmd::Mingle { cid } => {
+                let got = self.swarm.behaviour_mut().bitswap.get(&cid);
+                println!("got - {got:?}");
+            }
             P2pCmd::NetworkInfo { respond_to } => {
                 respond_to.maybe_send(self.swarm.network_info());
             }
@@ -602,6 +629,7 @@ where
 
     #[instrument(level = "trace", skip(self))]
     async fn on_identify_event(&mut self, ev: identify::Event) -> Result<()> {
+        println!("id: {ev:?}");
         match ev {
             identify::Event::Received { peer_id, info } => {
                 // Inform Kademlia about the listening addresses
