@@ -1,7 +1,9 @@
+use crate::executor::timeout;
 use celestia_proto::p2p::pb::HeaderRequest;
 use celestia_types::ExtendedHeader;
+use instant::Duration;
 use tokio::sync::{mpsc, oneshot};
-use tracing::debug;
+use tracing::{debug, error, info};
 
 use crate::executor::spawn;
 use crate::header_ex::utils::HeaderRequestExt;
@@ -52,6 +54,7 @@ impl Session {
 
         while self.ongoing > 0 {
             let (height, requested_amount, res) = self.recv_response().await;
+            info!("ZZZHES got recv from channel");
 
             match res {
                 Ok(headers) => {
@@ -60,20 +63,25 @@ impl Session {
                     responses.push(headers);
 
                     if headers_len < requested_amount {
+                        info!("ZZZHES subrequest");
                         // Reschedule the missing sub-range
                         let height = height + headers_len;
                         let amount = requested_amount - headers_len;
                         self.send_request(height, amount).await?;
                     } else {
+                        info!("ZZZHES nextrequest");
                         // Schedule next request
                         self.send_next_request().await?;
                     }
                 }
                 Err(P2pError::HeaderEx(e)) => {
-                    debug!("HeaderEx error: {e}");
+                    info!("ZZZHES HeaderEx error: {e}");
                     self.send_request(height, requested_amount).await?;
                 }
-                Err(e) => return Err(e),
+                Err(e) => {
+                    debug!("ZZZHES another error: {e}");
+                    return Err(e);
+                }
             }
         }
 
@@ -81,12 +89,18 @@ impl Session {
 
         headers.sort_unstable_by_key(|header| header.height().value());
 
+        info!("ZZZHES: done with, got {}", headers.len());
         Ok(headers)
     }
 
     async fn recv_response(&mut self) -> (u64, u64, Result<Vec<ExtendedHeader>>) {
         let (height, requested_amount, res) =
             self.response_rx.recv().await.expect("channel never closes");
+
+        debug!(
+            "ZZZHES   GOT {};{}. ongoing: {}",
+            height, requested_amount, self.ongoing
+        );
 
         self.ongoing -= 1;
 
@@ -108,7 +122,11 @@ impl Session {
     }
 
     pub(crate) async fn send_request(&mut self, height: u64, amount: u64) -> Result<()> {
-        debug!("Fetching batch {} until {}", height, height + amount - 1);
+        //debug!("Fetching batch {} until {}", height, height + amount - 1);
+        debug!(
+            "ZZZHES START {};{}. ongoing: {}",
+            height, amount, self.ongoing
+        );
 
         let request = HeaderRequest::with_origin(height, amount);
         let (tx, rx) = oneshot::channel();
@@ -124,6 +142,19 @@ impl Session {
         let response_tx = self.response_tx.clone();
 
         spawn(async move {
+            /*
+                        let result = match timeout(Duration::from_secs(20), rx).await {
+                            Ok(Ok(received)) => received,
+                            Ok(Err(e)) => {
+                                error!("ZZZHES worker died: {e}, should not happen!!!");
+                                Err(P2pError::WorkerDied)
+                            }
+                            Err(e) => {
+                                error!("ZZZHES Fetch timeout: {e:?}, should not happen!!!");
+                                Err(P2pError::HeaderEx(HeaderExError::InvalidResponse))
+                            }
+                        };
+            */
             let result = match rx.await {
                 Ok(result) => result,
                 Err(_) => Err(P2pError::WorkerDied),

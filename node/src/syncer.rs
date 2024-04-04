@@ -428,7 +428,7 @@ where
             end,
             cancellation_token: cancellation_token.clone(),
         });
-        info!("Fetching batch {start} until {end}");
+        info!("ZZZHSS Fetching batch {start} until {end}");
 
         let tx = self.headers_tx.clone();
         let p2p = self.p2p.clone();
@@ -456,6 +456,8 @@ where
                 return;
             }
         };
+
+        info!("ZZZHSS inserting {start} to {end}");
 
         // Headers are already verified by `get_verified_headers_range`,
         // so `append_unchecked` is used for optimization.

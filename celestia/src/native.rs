@@ -6,6 +6,7 @@ use anyhow::{bail, Context, Result};
 use celestia_node::network::{canonical_network_bootnodes, network_genesis, network_id, Network};
 use celestia_node::node::{Node, NodeConfig};
 use celestia_node::store::SledStore;
+use celestia_node::store::Store;
 use celestia_rpc::prelude::*;
 use celestia_rpc::Client;
 use clap::Args;
@@ -54,11 +55,14 @@ pub(crate) async fn run(args: Params) -> Result<()> {
 
     info!("Initializing store");
 
-    let store = if let Some(db_path) = args.store {
-        SledStore::new_in_path(db_path).await?
-    } else {
-        SledStore::new(network_id.clone()).await?
-    };
+    /*
+        let store = if let Some(db_path) = args.store {
+            SledStore::new_in_path(db_path).await?
+        } else {
+            SledStore::new(network_id.clone()).await?
+        };
+    */
+    let store = celestia_node::store::InMemoryStore::new();
 
     match store.head_height().await {
         Ok(height) => info!("Initialised store with head height: {height}"),

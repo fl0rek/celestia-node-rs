@@ -94,6 +94,7 @@ pub trait Store: Send + Sync + Debug {
     /// This method does not validate or verify that `headers` are indeed correct.
     async fn append_unchecked(&self, headers: Vec<ExtendedHeader>) -> Result<()> {
         for header in headers.into_iter() {
+            //tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
             self.append_single_unchecked(header).await?;
         }
 

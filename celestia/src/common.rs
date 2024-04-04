@@ -3,6 +3,11 @@ use celestia_node::network::Network;
 use clap::{Parser, ValueEnum};
 use serde_repr::Serialize_repr;
 
+use tracing_appender::non_blocking;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::Layer;
+
 use crate::{native, server};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ValueEnum, Serialize_repr)]
@@ -35,15 +40,29 @@ pub async fn run_cli() -> Result<()> {
 }
 
 fn init_tracing() -> tracing_appender::non_blocking::WorkerGuard {
-    let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
+    //let console_layer = console_subscriber::spawn();
+
+    let (non_blocking, guard) =
+        tracing_appender::non_blocking(tracing_appender::rolling::never("logs", "lumina"));
 
     let filter = tracing_subscriber::EnvFilter::builder()
         .with_default_directive(tracing_subscriber::filter::LevelFilter::INFO.into())
         .from_env_lossy();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
+    //tracing_subscriber::fmt()
+    //.with_env_filter(filter)
+    //.with_writer(non_blocking)
+
+    let fmt_layer = tracing_subscriber::fmt::layer()
         .with_writer(non_blocking)
+        .with_ansi(false)
+        .with_filter(filter);
+
+    tracing_subscriber::registry()
+        .with(fmt_layer)
+        //.with(console_layer)
+        //.with_filter(filter)
+        //.with_writer(non_blocking)
         .init();
 
     guard

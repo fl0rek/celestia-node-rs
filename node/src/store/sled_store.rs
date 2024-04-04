@@ -13,7 +13,7 @@ use tempdir::TempDir;
 use tendermint_proto::Protobuf;
 use tokio::task::spawn_blocking;
 use tokio::task::JoinError;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::store::Store;
 use crate::store::{Result, StoreError};
@@ -182,6 +182,7 @@ impl SledStore {
                     }
 
                     db.insert(HEAD_HEIGHT_KEY, &height_key)?;
+                    info!("Updated head : {height}");
 
                     // make sure Result is Infallible, we unwrap it later
                     let serialized_header: std::result::Result<_, Infallible> = header.encode_vec();
