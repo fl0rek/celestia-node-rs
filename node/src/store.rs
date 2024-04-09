@@ -7,7 +7,7 @@ use celestia_types::hash::Hash;
 use celestia_types::ExtendedHeader;
 use thiserror::Error;
 
-pub use fifo::FifoStore;
+pub use fifo_store::FifoStore;
 pub use in_memory_store::InMemoryStore;
 #[cfg(target_arch = "wasm32")]
 pub use indexed_db_store::IndexedDbStore;

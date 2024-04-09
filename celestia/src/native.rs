@@ -62,7 +62,7 @@ pub(crate) async fn run(args: Params) -> Result<()> {
             SledStore::new(network_id.clone()).await?
         };
     */
-    let store = celestia_node::store::InMemoryStore::new();
+    let store = celestia_node::store::FifoStore::new(16 * 1024);
 
     match store.head_height().await {
         Ok(height) => info!("Initialised store with head height: {height}"),
