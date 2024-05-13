@@ -1,3 +1,5 @@
+![docs.rs](https://img.shields.io/docsrs/lumina-node?label=lumina-node&link=https%3A%2F%2Fdocs.rs%2Flumina-node%2Flatest%2Flumina_node%2F)
+
 # Lumina
 
 Rust implementation of Celestia's [data availability node](https://github.com/celestiaorg/celestia-node) able to run natively and in browser-based environments.
