@@ -12,7 +12,6 @@ use send_wrapper::SendWrapper;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
 use tokio::sync::Notify;
-use tracing::{debug, instrument};
 
 use crate::store::header_ranges::{
     HeaderRange, HeaderRanges, HeaderRangesExt, VerifiedExtendedHeaders,
