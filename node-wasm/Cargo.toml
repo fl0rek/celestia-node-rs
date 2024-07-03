@@ -51,6 +51,7 @@ web-sys = { version = "0.3.69", features = [
   "BroadcastChannel",
   "Crypto",
   "DedicatedWorkerGlobalScope",
+  "ErrorEvent",
   "MessageEvent",
   "MessagePort",
   "Navigator",

@@ -237,6 +237,7 @@ impl NodeWorker {
 
 #[wasm_bindgen]
 pub async fn run_worker(queued_events: Vec<MessageEvent>) -> Result<()> {
+    panic!("died");
     info!("Entered run_worker");
     let (tx, mut rx) = mpsc::channel(WORKER_MESSAGE_SERVER_INCOMING_QUEUE_LENGTH);
     let events_channel_name = format!("NodeEventChannel-{}", get_crypto()?.random_uuid());

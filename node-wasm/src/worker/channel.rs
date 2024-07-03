@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{
     DedicatedWorkerGlobalScope, MessageEvent, MessagePort, SharedWorker, Worker, WorkerOptions,
-    WorkerType,
+    WorkerType, ErrorEvent
 };
 
 use crate::error::{Context, Error, Result};
@@ -160,8 +160,14 @@ impl AnyWorker {
     }
 
     fn setup_on_error_callback(&self) -> Closure<dyn Fn(MessageEvent)> {
-        let onerror = Closure::new(|ev: MessageEvent| {
-            error!("received error from Worker: {:?}", ev.to_string());
+        let onerror = Closure::new(|event: MessageEvent| {
+            let Some(error) = event.dyn_ref::<ErrorEvent>() else {
+                // fallback to make sure we print as much information as possible
+                web_sys::console::log_1(event.as_ref());
+                return;
+            };
+            error!("received error from Worker: {:?}", error.message());
+            //let error_event = 
         });
         match self {
             AnyWorker::SharedWorker(worker) => {
