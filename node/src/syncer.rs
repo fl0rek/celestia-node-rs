@@ -37,7 +37,7 @@ type Result<T, E = SyncerError> = std::result::Result<T, E>;
 
 const MAX_HEADERS_IN_BATCH: u64 = 512;
 const TRY_INIT_BACKOFF_MAX_INTERVAL: Duration = Duration::from_secs(60);
-const SYNCING_WINDOW: Duration = Duration::from_secs(30 * 24 * 60 * 60); // 30 days
+pub const SYNCING_WINDOW: Duration = Duration::from_secs(30 * 24 * 60 * 60); // 30 days
 
 /// Representation of all the errors that can occur when interacting with the [`Syncer`].
 #[derive(Debug, thiserror::Error)]
