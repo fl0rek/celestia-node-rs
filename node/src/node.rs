@@ -26,6 +26,7 @@ use crate::events::{EventChannel, EventSubscriber, NodeEvent};
 use crate::executor::spawn;
 use crate::p2p::{P2p, P2pArgs, P2pError};
 use crate::peer_tracker::PeerTrackerInfo;
+use crate::pruner::{Pruner, PrunerArgs, PrunerError};
 use crate::store::{SamplingMetadata, Store, StoreError};
 use crate::syncer::{Syncer, SyncerArgs, SyncerError, SyncingInfo};
 
@@ -49,6 +50,10 @@ pub enum NodeError {
     /// An error propagated from the [`Daser`] module.
     #[error(transparent)]
     Daser(#[from] DaserError),
+
+    /// An error propagated from the [`Daser`] component.
+    #[error(transparent)]
+    Pruner(#[from] PrunerError),
 }
 
 /// Node conifguration.
@@ -81,6 +86,7 @@ where
     store: Arc<S>,
     syncer: Arc<Syncer<S>>,
     _daser: Arc<Daser>,
+    _pruner: Arc<Pruner>,
     tasks_cancellation_token: CancellationToken,
 }
 
@@ -108,13 +114,14 @@ where
         let event_channel = EventChannel::new();
         let event_sub = event_channel.subscribe();
         let store = Arc::new(config.store);
+        let blockstore = Arc::new(config.blockstore);
 
         let p2p = Arc::new(P2p::start(P2pArgs {
             network_id: config.network_id,
             local_keypair: config.p2p_local_keypair,
             bootnodes: config.p2p_bootnodes,
             listen_on: config.p2p_listen_on,
-            blockstore: config.blockstore,
+            blockstore: blockstore.clone(),
             store: store.clone(),
             event_pub: event_channel.publisher(),
         })?);
@@ -131,6 +138,12 @@ where
             event_pub: event_channel.publisher(),
         })?);
 
+        let pruner = Arc::new(Pruner::start(PrunerArgs {
+            store: store.clone(),
+            blockstore,
+            event_pub: event_channel.publisher(),
+        })?);
+
         // spawn the task that will stop the services when the fraud is detected
         let network_compromised_token = p2p.get_network_compromised_token().await?;
         let tasks_cancellation_token = CancellationToken::new();
@@ -138,6 +151,7 @@ where
         spawn({
             let syncer = syncer.clone();
             let daser = daser.clone();
+            let pruner = pruner.clone();
             let tasks_cancellation_token = tasks_cancellation_token.child_token();
             let event_pub = event_channel.publisher();
 
@@ -147,6 +161,7 @@ where
                     _ = network_compromised_token.cancelled() => {
                         syncer.stop();
                         daser.stop();
+                        pruner.stop();
 
                         if event_pub.has_subscribers() {
                             event_pub.send(NodeEvent::NetworkCompromised);
@@ -166,6 +181,7 @@ where
             store,
             syncer,
             _daser: daser,
+            _pruner: pruner,
             tasks_cancellation_token,
         };
 

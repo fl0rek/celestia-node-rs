@@ -177,7 +177,7 @@ where
     /// List of the addresses on which to listen for incoming connections.
     pub listen_on: Vec<Multiaddr>,
     /// The store for headers.
-    pub blockstore: B,
+    pub blockstore: Arc<B>,
     /// The store for headers.
     pub store: Arc<S>,
     /// Event publisher.
@@ -598,7 +598,7 @@ where
         let gossipsub = init_gossipsub(&args, [&header_sub_topic, &bad_encoding_fraud_sub_topic])?;
 
         let kademlia = init_kademlia(&args)?;
-        let bitswap = init_bitswap(args.blockstore, args.store.clone(), &args.network_id)?;
+        let bitswap = init_bitswap(args.blockstore.clone(), args.store.clone(), &args.network_id)?;
 
         let header_ex = HeaderExBehaviour::new(HeaderExConfig {
             network_id: &args.network_id,
@@ -1125,7 +1125,7 @@ where
 }
 
 fn init_bitswap<B, S>(
-    blockstore: B,
+    blockstore: Arc<B>,
     store: Arc<S>,
     network_id: &str,
 ) -> Result<beetswap::Behaviour<MAX_MH_SIZE, B>>

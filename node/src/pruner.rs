@@ -3,19 +3,21 @@ use std::sync::Arc;
 use blockstore::Blockstore;
 use celestia_tendermint::Time;
 use celestia_types::ExtendedHeader;
+use cid::Cid;
 use instant::Duration;
+use tokio::select;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use crate::events::{EventPublisher, NodeEvent};
-use crate::executor::spawn;
+use crate::executor::{sleep, spawn};
 use crate::p2p::P2pError;
 use crate::store::{Store, StoreError};
 use crate::syncer::SYNCING_WINDOW;
 
 const BLOCK_PRODUCTION_TIME_ESTIMATE_SECS: u64 = 12;
 // 1 hour behind syncing window
-const PRUNING_WINDOW: Duration = SYNCING_WINDOW.saturating_add(Duration::from_secs(1 * 60 * 60));
+const PRUNING_WINDOW: Duration = SYNCING_WINDOW.saturating_add(Duration::from_secs(60 * 60));
 
 type Result<T, E = PrunerError> = std::result::Result<T, E>;
 
@@ -30,8 +32,8 @@ pub enum PrunerError {
     #[error(transparent)]
     Store(#[from] StoreError),
 
-    #[error("Encountered timestamp out of range")]
-    TimeOutOfRange,
+    #[error(transparent)]
+    Blockstore(#[from] blockstore::Error),
 }
 
 
@@ -77,6 +79,10 @@ impl Pruner {
 
         Ok( Pruner { cancellation_token })
     }
+
+    pub fn stop(&self) {
+        self.cancellation_token.cancel();
+    }
 }
 
 impl Drop for Pruner {
@@ -113,16 +119,60 @@ where
 
     async fn run(&mut self) -> Result<()> {
         // TODO: about this error handling...
-        self.prune_old_headers().await?;
+        //self.prune_old_headers().await?;
 
+        let estimated_block_time = Duration::from_secs(BLOCK_PRODUCTION_TIME_ESTIMATE_SECS);
         loop { 
-            todo!()
+            self.try_prune_tail().await?;
+
+            select! {
+                _ = self.cancellation_token.cancelled() => break,
+                _ = sleep(estimated_block_time) => ()
+            }
         }
 
         debug!("Pruner stopped");
         Ok(())
     }
 
+    async fn try_prune_tail(&self) -> Result<()> {
+        let pruning_window_end = Time::now().checked_sub(PRUNING_WINDOW).unwrap_or_else(|| {
+            warn!("underflow when computing pruning window start, defaulting to unix epoch");
+            Time::unix_epoch()
+        });
+
+        loop {
+            let Some((tail_header, cids)) = self.get_current_tail().await? else {
+                // empty store == nothing to prune
+                return Ok(());
+            };
+
+
+
+            if tail_header.time() < pruning_window_end {
+                for cid in cids {
+                    self.blockstore.remove(&cid).await?;
+                }
+                self.store.remove_tail(tail_header.height().value()).await?;
+                continue; // re-check the new tail
+            }
+        }
+    }
+
+    async fn get_current_tail(&self) -> Result<Option<(ExtendedHeader, Vec<Cid>)>> {
+        let Some(current_tail_height) = self.store.get_stored_header_ranges().await?.tail() else {
+            // empty store == nothing to prune
+            return Ok(None);
+        };
+
+        let header = self.store.get_by_height(current_tail_height).await?;
+
+        let metadata = self.store.get_sampling_metadata(header.height().value()).await?;
+
+        Ok(Some((header, metadata.map(|m| m.cids).unwrap_or_default())))
+    }
+
+    /*
     // TODO: Name
     async fn prune_old_headers(&self) -> Result<()> {
         let Some(current_tail_height) = self.store.get_stored_header_ranges().await?.tail() else {
@@ -155,13 +205,7 @@ where
 
         Ok(())
     }
-
-    async fn get_current_tail(&self) -> Result<Option<ExtendedHeader>> {
-        let Some(current_tail_height) = self.store.get_stored_header_ranges().await?.tail() else {
-            // empty store == nothing to prune
-            return Ok(None);
-        };
-    }
+    */
 }
 
 /// Given a reference_header, estimate height of the block produced at provided time, assuming 12s
@@ -189,7 +233,7 @@ fn estimate_header_height_at_time(reference_header: &ExtendedHeader, time: Time)
         reference_header
             .height()
             .value()
-            .saturating_sub(estimated_height_delta)&
+            .saturating_sub(estimated_height_delta)
     } else {
         reference_header
             .height()

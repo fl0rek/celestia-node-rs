@@ -296,6 +296,7 @@ impl NodeEvent {
     pub fn is_error(&self) -> bool {
         match self {
             NodeEvent::FatalDaserError { .. }
+            | NodeEvent::FatalPrunerError { .. }
             | NodeEvent::FetchingHeadersFailed { .. }
             | NodeEvent::NetworkCompromised => true,
             NodeEvent::PeerConnected { .. }
@@ -362,6 +363,9 @@ impl fmt::Display for NodeEvent {
             }
             NodeEvent::FatalDaserError { error } => {
                 write!(f, "Daser stopped because of a fatal error: {error}")
+            }
+            NodeEvent::FatalPrunerError { error } => {
+                write!(f, "Pruner stopped because of a fatal error: {error}")
             }
             NodeEvent::AddedHeaderFromHeaderSub { height } => {
                 write!(f, "Added header {height} from header-sub")

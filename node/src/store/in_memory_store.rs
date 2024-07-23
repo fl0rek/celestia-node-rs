@@ -416,7 +416,8 @@ impl Store for InMemoryStore {
     }
 
     async fn remove_tail(&self, cutoff: u64) -> Result<()> {
-        Ok(self.remove_tail(cutoff).await)
+        self.remove_tail(cutoff).await;
+        Ok(())
     }
 }
 
