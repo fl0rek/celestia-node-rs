@@ -736,9 +736,12 @@ mod tests {
     async fn syncing_window_edge() {
         let month_and_day_ago = Duration::from_secs(31 * 24 * 60 * 60);
         let mut gen = ExtendedHeaderGenerator::new();
-        gen.set_time((Time::now() - month_and_day_ago).expect("to not underflow"));
+        gen.set_time(
+            (Time::now() - month_and_day_ago).expect("to not underflow"),
+            Duration::from_secs(1),
+        );
         let mut headers = gen.next_many(1200);
-        gen.set_time(Time::now());
+        gen.reset_time();
         headers.append(&mut gen.next_many(2049 - 1200));
 
         let (syncer, store, mut p2p_mock) = initialized_syncer(headers[2048].clone()).await;

@@ -170,20 +170,8 @@ mod tests {
 
     use super::*;
 
+    use celestia_tendermint::Time;
     use std::time::Duration;
-
-    #[test]
-    fn header_height_estimate() {
-        let mut gen = ExtendedHeaderGenerator::new();
-        gen.set_time((Time::now() - Duration::from_secs(1024 * 12)).unwrap());
-        let headers = gen.next_many(512);
-
-        let estimated_height = estimate_header_height_at_time(&headers[0], headers[511].time());
-        assert_eq!(estimated_height, 512);
-
-        let estimated_height = estimate_header_height_at_time(&headers[511], headers[0].time());
-        assert_eq!(estimated_height, 1);
-    }
 
     #[test]
     fn calculate_range_to_fetch_test_header_limit() {

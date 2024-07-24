@@ -229,10 +229,10 @@ pub enum NodeEvent {
         error: String,
     },
 
-    /// Pruning fatal error. 
+    /// Pruning fatal error.
     FatalPrunerError {
         /// A human readable representation of the error
-        error: String
+        error: String,
     },
 
     /// A new header was added from HeaderSub.

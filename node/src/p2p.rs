@@ -598,7 +598,11 @@ where
         let gossipsub = init_gossipsub(&args, [&header_sub_topic, &bad_encoding_fraud_sub_topic])?;
 
         let kademlia = init_kademlia(&args)?;
-        let bitswap = init_bitswap(args.blockstore.clone(), args.store.clone(), &args.network_id)?;
+        let bitswap = init_bitswap(
+            args.blockstore.clone(),
+            args.store.clone(),
+            &args.network_id,
+        )?;
 
         let header_ex = HeaderExBehaviour::new(HeaderExConfig {
             network_id: &args.network_id,

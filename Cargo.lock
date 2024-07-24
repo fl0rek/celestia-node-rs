@@ -527,9 +527,37 @@ dependencies = [
 [[package]]
 name = "beetswap"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "defcc80a305e89c8fb185e4ce9d068ea48f03baebf1dbc8549fb36131dbc61ce"
 dependencies = [
  "asynchronous-codec",
- "blockstore",
+ "blockstore 0.5.0",
+ "bytes",
+ "cid",
+ "fnv",
+ "futures-core",
+ "futures-timer",
+ "futures-util",
+ "instant",
+ "libp2p-core",
+ "libp2p-identity",
+ "libp2p-swarm",
+ "multihash-codetable",
+ "quick-protobuf",
+ "smallvec",
+ "thiserror",
+ "time",
+ "tracing",
+ "unsigned-varint 0.8.0",
+ "void",
+]
+
+[[package]]
+name = "beetswap"
+version = "0.2.0"
+dependencies = [
+ "asynchronous-codec",
+ "blockstore 0.6.0",
  "bytes",
  "cid",
  "fnv",
@@ -634,6 +662,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "blockstore"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "358358b19add120a5afc3dd1c8e9161d6d06c44dfec2ef8da58b7fe5c369c90d"
+dependencies = [
+ "cid",
+ "dashmap",
+ "multihash",
+ "thiserror",
 ]
 
 [[package]]
@@ -809,7 +849,7 @@ version = "0.2.0"
 dependencies = [
  "base64",
  "bech32",
- "blockstore",
+ "blockstore 0.6.0",
  "bytes",
  "celestia-proto",
  "celestia-tendermint",
@@ -3107,8 +3147,9 @@ version = "0.2.0"
 dependencies = [
  "async-trait",
  "backoff",
- "beetswap",
- "blockstore",
+ "beetswap 0.1.1",
+ "beetswap 0.2.0",
+ "blockstore 0.6.0",
  "bytes",
  "celestia-proto",
  "celestia-rpc",
@@ -3154,7 +3195,7 @@ name = "lumina-node-wasm"
 version = "0.1.1"
 dependencies = [
  "anyhow",
- "blockstore",
+ "blockstore 0.6.0",
  "celestia-tendermint",
  "celestia-types",
  "console_error_panic_hook",
@@ -3890,7 +3931,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.12.1",
  "log",
  "multimap",
