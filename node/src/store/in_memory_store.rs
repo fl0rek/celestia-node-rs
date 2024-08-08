@@ -134,9 +134,9 @@ impl InMemoryStore {
         }
     }
 
-    async fn remove_last(&self) -> Result<u64> {
+    async fn remove_tail(&self, cutoff: u64) -> Result<()> {
         let mut inner = self.inner.write().await;
-        inner.remove_last()
+        inner.remove_tail(cutoff)
     }
 }
 
@@ -307,33 +307,33 @@ impl InMemoryStoreInner {
         Ok(Some(metadata.clone()))
     }
 
-    fn remove_last(&mut self) -> Result<u64> {
-        let Some(height) = self.header_ranges.tail() else {
-            return Err(StoreError::NotFound);
-        };
+    fn remove_tail(&mut self, cutoff: u64) -> Result<()> {
+        while let Some(height) = self.header_ranges.next() {
+            if height > cutoff {
+                break;
+            }
 
-        let Entry::Occupied(height_to_hash) = self.height_to_hash.entry(height) else {
-            return Err(StoreError::StoredDataError(format!(
-                "inconsistency between ranges and height_to_hash tables, height {height}"
-            )));
-        };
+            let Entry::Occupied(height_to_hash) = self.height_to_hash.entry(height) else {
+                return Err(StoreError::StoredDataError(format!(
+                    "inconsistency between ranges and height_to_hash tables, height {height}"
+                )));
+            };
 
-        let hash = height_to_hash.get();
-        let Entry::Occupied(header) = self.headers.entry(*hash) else {
-            return Err(StoreError::StoredDataError(format!(
-                "inconsistency between header and height_to_hash tables, hash {hash}"
-            )));
-        };
+            let hash = height_to_hash.get();
+            let Entry::Occupied(header) = self.headers.entry(*hash) else {
+                return Err(StoreError::StoredDataError(format!(
+                    "inconsistency between header and height_to_hash tables, hash {hash}"
+                )));
+            };
 
-        // sampling data may or may not be there
-        self.sampling_data.remove(&height);
+            // sampling data may or may not be there
+            self.sampling_data.remove(&height);
 
-        height_to_hash.remove_entry();
-        header.remove_entry();
+            height_to_hash.remove_entry();
+            header.remove_entry();
+        }
 
-        self.header_ranges.pop_tail();
-
-        Ok(height)
+        Ok(())
     }
 }
 
@@ -427,8 +427,8 @@ impl Store for InMemoryStore {
         Ok(self.get_accepted_sampling_ranges().await)
     }
 
-    async fn remove_last(&self) -> Result<u64> {
-        self.remove_last().await
+    async fn remove_tail(&self, cutoff: u64) -> Result<()> {
+        self.remove_tail(cutoff).await
     }
 }
 

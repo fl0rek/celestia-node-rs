@@ -165,4 +165,19 @@ mod tests {
 
         assert_eq!(hash, *cid.hash());
     }
+
+
+    #[test]
+    fn test_data() {
+        let cid0 = row_cid(99, u64::MAX).unwrap();
+        let file0 = std::fs::File::create("row_MAX.bin").unwrap();
+        cid0.write_bytes(&file0).unwrap();
+        file0.sync_all().unwrap();
+        
+        let cid1 = row_cid(99, 1).unwrap();
+        let file1 = std::fs::File::create("row_1.bin").unwrap();
+        cid1.write_bytes(&file1).unwrap();
+        file1.sync_all().unwrap();
+
+    }
 }

@@ -156,7 +156,7 @@ pub trait Store: Send + Sync + Debug {
     async fn get_accepted_sampling_ranges(&self) -> Result<BlockRanges>;
 
     /// Remove header with lowest height from the store.
-    async fn remove_last(&self) -> Result<u64>;
+    async fn remove_tail(&self, cutoff: u64) -> Result<()>;
 }
 
 /// Representation of all the errors that can occur when interacting with the [`Store`].
@@ -1035,8 +1035,8 @@ mod tests {
         store.insert(&headers[96..128]).await.unwrap();
         assert_store(&store, &headers, new_block_ranges([1..=64, 97..=128])).await;
 
-        store.remove_last().await.unwrap();
-        assert_store(&store, &headers, new_block_ranges([2..=64, 97..=128])).await;
+        store.remove_last(32).await.unwrap();
+        assert_store(&store, &headers, new_block_ranges([33..=64, 97..=128])).await;
     }
 
     #[rstest]
@@ -1052,12 +1052,12 @@ mod tests {
         let store = s;
         let headers = ExtendedHeaderGenerator::new().next_many(128);
 
-        store.insert(&headers[0..1]).await.unwrap();
+        store.insert(&headers[0..32]).await.unwrap();
         store.insert(&headers[65..128]).await.unwrap();
-        assert_store(&store, &headers, new_block_ranges([1..=1, 66..=128])).await;
+        assert_store(&store, &headers, new_block_ranges([1..=32, 66..=128])).await;
 
-        store.remove_last().await.unwrap();
-        assert_store(&store, &headers, new_block_ranges([66..=128])).await;
+        store.remove_last(100).await.unwrap();
+        assert_store(&store, &headers, new_block_ranges([101..=128])).await;
     }
 
     #[rstest]
@@ -1065,23 +1065,24 @@ mod tests {
     #[cfg_attr(not(target_arch = "wasm32"), case::redb(new_redb_store()))]
     #[cfg_attr(target_arch = "wasm32", case::indexed_db(new_indexed_db_store()))]
     #[self::test]
-    async fn tail_removal_last_one<S: Store>(
+    async fn tail_removal_everythin<S: Store>(
         #[case]
         #[future(awt)]
         s: S,
     ) {
         let store = s;
-        let headers = ExtendedHeaderGenerator::new().next_many(66);
+        let headers = ExtendedHeaderGenerator::new().next_many(128);
 
-        store.insert(&headers[65..=65]).await.unwrap();
-        assert_store(&store, &headers, new_block_ranges([66..=66])).await;
+        store.insert(&headers[0..32]).await.unwrap();
+        store.insert(&headers[65..128]).await.unwrap();
+        assert_store(&store, &headers, new_block_ranges([1..=32, 65..=128])).await;
 
-        store.remove_last().await.unwrap();
+        store.remove_tail(256).await.unwrap();
 
         let stored_ranges = store.get_stored_header_ranges().await.unwrap();
         assert!(stored_ranges.is_empty());
 
-        for h in 1..=66 {
+        for h in 1..=200 {
             assert!(!store.has_at(h).await);
         }
     }

@@ -526,9 +526,7 @@ dependencies = [
 
 [[package]]
 name = "beetswap"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "defcc80a305e89c8fb185e4ce9d068ea48f03baebf1dbc8549fb36131dbc61ce"
+version = "0.2.0"
 dependencies = [
  "asynchronous-codec",
  "blockstore",
@@ -640,12 +638,11 @@ dependencies = [
 
 [[package]]
 name = "blockstore"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "358358b19add120a5afc3dd1c8e9161d6d06c44dfec2ef8da58b7fe5c369c90d"
+version = "0.6.0"
 dependencies = [
  "cid",
- "dashmap",
+ "dashmap 6.0.1",
+ "idb",
  "js-sys",
  "multihash",
  "redb",
@@ -1134,6 +1131,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
 dependencies = [
  "cfg-if",
+ "hashbrown",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
+]
+
+[[package]]
+name = "dashmap"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
  "hashbrown",
  "lock_api",
  "once_cell",
@@ -2164,6 +2175,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "idb"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5343e1df07c7c249df4a750a6e8c42dda96d6041e126cea6776151ec648645c2"
+dependencies = [
+ "js-sys",
+ "num-traits",
+ "thiserror",
+ "tokio",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "idna"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3118,7 +3143,7 @@ dependencies = [
  "celestia-tendermint-proto",
  "celestia-types",
  "cid",
- "dashmap",
+ "dashmap 5.5.3",
  "dotenvy",
  "function_name",
  "futures",
@@ -3891,7 +3916,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22505a5c94da8e3b7c2996394d1c933236c4d743e81a410bcca4e6989fc066a4"
 dependencies = [
  "bytes",
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.12.1",
  "log",
  "multimap",
@@ -4159,17 +4184,13 @@ dependencies = [
 
 [[package]]
 name = "rexie"
-version = "0.5.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d34618a20b14cebebc63f8b1c5228116e7379765e8f1b7a9f66b5920babd8595"
+checksum = "1dc7b9e833b7e246d7f88952c666336eb57f7c7e715b1e4756cbfbcddd3a5816"
 dependencies = [
- "js-sys",
- "num-traits",
+ "idb",
  "thiserror",
- "tokio",
  "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]

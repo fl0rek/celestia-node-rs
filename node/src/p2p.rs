@@ -185,7 +185,7 @@ where
     /// List of the addresses on which to listen for incoming connections.
     pub listen_on: Vec<Multiaddr>,
     /// The store for headers.
-    pub blockstore: B,
+    pub blockstore: Arc<B>,
     /// The store for headers.
     pub store: Arc<S>,
     /// Event publisher.
@@ -1140,7 +1140,7 @@ where
 }
 
 fn init_bitswap<B, S>(
-    blockstore: B,
+    blockstore: Arc<B>,
     store: Arc<S>,
     network_id: &str,
 ) -> Result<beetswap::Behaviour<MAX_MH_SIZE, B>>

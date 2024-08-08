@@ -379,7 +379,7 @@ impl IndexedDbStore {
         get_ranges(&store, ACCEPTED_SAMPLING_RANGES_KEY).await
     }
 
-    async fn remove_last(&self) -> Result<u64> {
+    async fn remove_tail(&self, cutoff: u64) -> Result<()> {
         let tx = self.db.transaction(
             &[HEADER_STORE_NAME, RANGES_STORE_NAME],
             TransactionMode::ReadWrite,
@@ -391,20 +391,22 @@ impl IndexedDbStore {
 
         let mut header_ranges = get_ranges(&ranges_store, HEADER_RANGES_KEY).await?;
 
-        let Some(height) = header_ranges.pop_tail() else {
-            return Err(StoreError::NotFound);
-        };
+        for height in header_ranges {
+            if height > cutoff {
+                break;
+            }
+            let jsvalue_height = to_value(&height).expect("to create jsvalue");
+            let header = height_index.get(&jsvalue_height).await?;
+
+            let id = js_sys::Reflect::get(&header, &to_value("id")?)
+                .map_err(|_| StoreError::StoredDataError("could not get header's DB id".into()))?;
+
+            header_store.delete(&id).await?;
+        }
+
         set_ranges(&ranges_store, HEADER_RANGES_KEY, &header_ranges).await?;
 
-        let jsvalue_height = to_value(&height).expect("to create jsvalue");
-        let header = height_index.get(&jsvalue_height).await?;
-
-        let id = js_sys::Reflect::get(&header, &to_value("id")?)
-            .map_err(|_| StoreError::StoredDataError("could not get header's DB id".into()))?;
-
-        header_store.delete(&id).await?;
-
-        Ok(height)
+        Ok(())
     }
 }
 
@@ -508,8 +510,8 @@ impl Store for IndexedDbStore {
         fut.await
     }
 
-    async fn remove_last(&self) -> Result<u64> {
-        let fut = SendWrapper::new(self.remove_last());
+    async fn remove_tail(&self, cutoff: u64) -> Result<()> {
+        let fut = SendWrapper::new(self.remove_tail(cutoff));
         fut.await
     }
 }
