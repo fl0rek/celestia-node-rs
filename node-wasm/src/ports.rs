@@ -55,6 +55,8 @@ impl ClientConnection {
         server_tx: mpsc::UnboundedSender<ClientMessage>,
     ) -> Result<Self> {
         let onmessage = Closure::new(move |ev: MessageEvent| {
+            info!("got message!");
+
             if let Some(port) = ev.get_port() {
                 if let Err(e) = server_tx.send(ClientMessage::AddConnection(port)) {
                     error!("port forwarding channel closed, shouldn't happen: {e}");

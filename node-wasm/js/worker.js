@@ -1,4 +1,4 @@
-import init, { NodeWorker, NodeClient } from "lumina-node-wasm"
+import init, { NodeWorker } from "lumina-node-wasm"
 
 Error.stackTraceLimit = 99;
 
