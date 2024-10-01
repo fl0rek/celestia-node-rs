@@ -40,7 +40,7 @@ pub enum Network {
 }
 
 /// Set up a logging layer that direct logs to the browser's console.
-#[wasm_bindgen(start)]
+//#[wasm_bindgen(start)]
 pub fn setup_logging() {
     console_error_panic_hook::set_once();
 

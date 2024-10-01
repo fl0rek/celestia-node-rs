@@ -4,6 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+lumina-node-wasm = { workspace = true }
 console_error_panic_hook = "0.1.7"
 wasm-bindgen = "0.2.93"
-web-sys = { version = "0.3.70", features = ["Window", "Document", "HtmlElement", "Text"] }
+serde-wasm-bindgen = "0.6.5"
+wasm-bindgen-futures = "0.4.43"
+js-sys = "0.3.70"
+tracing = "0.1.40"
+web-sys = { version = "0.3.70", features = [ 
+  "DedicatedWorkerGlobalScope",
+  "Document",
+  "HtmlElement",
+  "Text",
+  "Window",
+  "Worker",
+  "WorkerOptions",
+  "WorkerType",
+]}

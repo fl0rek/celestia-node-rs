@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct NetworkInfoSnapshot {
+pub struct NetworkInfoSnapshot {
     pub num_peers: usize,
     connection_counters: ConnectionCountersSnapshot,
 }

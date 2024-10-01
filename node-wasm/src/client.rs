@@ -38,7 +38,7 @@ pub struct WasmNodeConfig {
 ///
 /// [`NodeWorker`]: crate::worker::NodeWorker
 #[wasm_bindgen]
-struct NodeClient {
+pub struct NodeClient {
     worker: WorkerClient,
 }
 
