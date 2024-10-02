@@ -3,9 +3,9 @@ use lumina_node_wasm::NodeClient;
 use lumina_node_wasm::utils::setup_logging;
 use wasm_bindgen_futures::spawn_local;
 use wasm_bindgen::prelude::*;
-use web_sys::{window, Worker, WorkerOptions, WorkerType};
+use web_sys::{window, Worker, WorkerOptions, WorkerType, CustomEvent, CustomEventInit};
 
-#[wasm_bindgen(inline_js = "export function set_node(node) { console.log(node); window.node = node }")]
+#[wasm_bindgen(inline_js = "export function set_node(node) { window.node = node }")]
 extern "C" {
     fn set_node(node: NodeClient);
 }
@@ -19,18 +19,15 @@ fn worker_new(url: &str) -> Worker {
 fn main() {
     setup_logging();
 
-    web_sys::console::log_1(&"not worker starting".into());
     let worker = worker_new("./worker_loader.js");
 
     spawn_local(async move {
         let node_client = NodeClient::new(worker.clone().into()).await.expect("to initialise NodeClient");
-        set_node(node_client)
+        set_node(node_client);
+        //let event_params = CustomEventInit::new();
+        //event_params.set_detail(node_client);
+        let lumina_event = CustomEvent::new("LuminaReady").expect("to create an event");
+        window().expect("to access window").dispatch_event(&lumina_event);
         //Reflect::set(&window().expect("to access window"), &"node".into(), node_client.dyn_ref().unwrap());
-    })
-
-
-    //let document = window() .and_then(|win| win.document()) .expect("Could not access the document");
-    //let body = document.body().expect("Could not access document.body");
-    //let text_node = document.create_text_node("Hello, world from Vanilla Rust!");
-    //body.append_child(text_node.as_ref()) .expect("Failed to append text");
+    });
 }

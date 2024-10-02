@@ -12,6 +12,8 @@ wasm-bindgen-futures = "0.4.43"
 js-sys = "0.3.70"
 tracing = "0.1.40"
 web-sys = { version = "0.3.70", features = [ 
+  "CustomEvent",
+  "CustomEventInit",
   "DedicatedWorkerGlobalScope",
   "Document",
   "HtmlElement",

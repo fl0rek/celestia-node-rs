@@ -1,7 +1,5 @@
 Error.stackTraceLimit = 99; // rust stack traces can get pretty big, increase the default
 
-import { NodeConfig, NodeClient } from "/wasm/lumina_node_wasm.js";
-
 async function fetch_config() {
   const response = await fetch('/cfg.json');
   const json = await response.json();
@@ -16,11 +14,11 @@ async function fetch_config() {
   return config;
 }
 
-async function show_stats(node) {
-  if (!node || !await node.is_running()) {
+async function showStats(node) {
+  if (!node || !await node.isRunning()) {
     return;
   }
-  const info = await node.syncer_info();
+  const info = await node.syncerInfo();
   document.getElementById("stored-ranges").innerText = info.stored_headers.map((range) => {
     return `${range.start}..${range.end}`;
   }).join(", ");
@@ -106,21 +104,18 @@ function log_event(event) {
 }
 
 async function main(document, window) {
-  const worker = new Worker('/js/worker.js', {type: 'module'});
+  console.log(window.node);
 
-  console.log(worker);
-  window.node = await new NodeClient(worker);
-
-  window.events = await window.node.events_channel();
+  window.events = await window.node.eventsChannel();
   window.events.onmessage = (event) => {
     log_event(event);
   };
 
   bind_config(await fetch_config());
 
-  if (await window.node.is_running() === true) {
+  if (await window.node.isRunning() === true) {
     document.querySelectorAll('.config').forEach(elem => elem.disabled = true);
-    document.getElementById("peer-id").innerText = await window.node.local_peer_id();
+    document.getElementById("peer-id").innerText = await window.node.localPeerId();
     document.querySelectorAll(".status").forEach(elem => elem.style.visibility = "visible");
   }
 
@@ -128,11 +123,13 @@ async function main(document, window) {
     document.querySelectorAll('.config').forEach(elem => elem.disabled = true);
 
     await window.node.start(window.config);
-    document.getElementById("peer-id").innerText = await window.node.local_peer_id();
+    document.getElementById("peer-id").innerText = await window.node.localPeerId();
     document.querySelectorAll(".status").forEach(elem => elem.style.visibility = "visible");
   });
 
-  setInterval(async () => await show_stats(window.node), 1000)
+  setInterval(async () => await showStats(window.node), 1000)
 }
 
-await main(document, window);
+addEventListener("LuminaReady", async (wasm) => {
+  main(document, window, wasm);
+})

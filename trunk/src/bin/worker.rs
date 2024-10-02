@@ -7,7 +7,7 @@ use tracing::info;
 
 fn main() {
     setup_logging();
-
+    web_sys::console::log_1(&"worker starting".into());
     info!("in worker");
 
     let scope = DedicatedWorkerGlobalScope::from(JsValue::from(js_sys::global()));
