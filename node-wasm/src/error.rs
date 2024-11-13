@@ -2,6 +2,7 @@
 
 use std::fmt::{self, Display};
 
+use postcard_schema::Schema;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::convert::IntoWasmAbi;
 use wasm_bindgen::describe::WasmDescribe;

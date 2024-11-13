@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use js_sys::Array;
 use libp2p::identity::Keypair;
+use postcard_schema::Schema;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use tracing::{debug, error};
@@ -27,7 +28,7 @@ use crate::wrapper::node::{PeerTrackerInfoSnapshot, SyncingInfoSnapshot};
 
 /// Config for the lumina wasm node.
 #[wasm_bindgen(inspectable, js_name = NodeConfig)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Schema)]
 pub struct WasmNodeConfig {
     /// A network to connect to.
     pub network: Network,

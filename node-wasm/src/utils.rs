@@ -9,6 +9,7 @@ use js_sys::{Math, Promise};
 use libp2p::multiaddr::Protocol;
 use libp2p::{Multiaddr, PeerId};
 use lumina_node::network;
+use postcard_schema::Schema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -28,7 +29,7 @@ use crate::error::{Context, Error, Result};
 
 /// Supported Celestia networks.
 #[wasm_bindgen]
-#[derive(PartialEq, Eq, Clone, Copy, Serialize_repr, Deserialize_repr, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Serialize_repr, Deserialize_repr, Debug, Schema)]
 #[repr(u8)]
 pub enum Network {
     /// Celestia mainnet.

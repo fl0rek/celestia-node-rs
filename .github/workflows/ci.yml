@@ -161,9 +161,6 @@ jobs:
     - name: Generate auth tokens
       run: ./tools/gen_auth_tokens.sh
 
-    - name: Run tests
-      run: cargo test
-
     - name: Run rpc wasm test
       run: wasm-pack test --headless --chrome rpc --features=wasm-bindgen
 

@@ -4,6 +4,7 @@ use enum_as_inner::EnumAsInner;
 use js_sys::Array;
 use libp2p::Multiaddr;
 use libp2p::PeerId;
+use postcard_rpc::endpoints;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 use wasm_bindgen::{JsError, JsValue};
@@ -11,12 +12,25 @@ use wasm_bindgen::{JsError, JsValue};
 use celestia_types::hash::Hash;
 use lumina_node::node::{PeerTrackerInfo, SyncingInfo};
 use lumina_node::store::SamplingMetadata;
+use postcard_schema::Schema;
 
 use crate::client::WasmNodeConfig;
 use crate::error::Error;
 use crate::error::Result;
 use crate::utils::JsResult;
 use crate::wrapper::libp2p::NetworkInfoSnapshot;
+
+
+endpoints! {
+    list = ENDPOINT_LIST;
+    | EndpointTy | RequestTy | ResponseTy | Path |
+    | ---------- | --------- | ---------- | ---- |
+    | PingEndpoint | ()   | bool | "ping/internal" |
+    | NodeEndpoint | WasmNodeConfig | () | "node/start" |
+    | NodeEndpoint | () | () | "node/stop" |
+    | Node
+    
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum NodeCommand {

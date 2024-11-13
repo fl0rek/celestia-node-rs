@@ -36,6 +36,9 @@ futures = "0.3.30"
 gloo-timers = "0.3.0"
 instant = "0.1.13"
 js-sys = "0.3.70"
+postcard = "1.0.10"
+postcard-schema = { version = "0.1.0", features = ["use-std"]}
+postcard-rpc = "0.10.6"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.120"
 serde-wasm-bindgen = "0.6.5"
