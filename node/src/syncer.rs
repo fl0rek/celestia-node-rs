@@ -49,6 +49,10 @@ pub enum SyncerError {
     #[error("Store: {0}")]
     Store(#[from] StoreError),
 
+    /// An error propagated from the [`zk`] component.
+    #[error("ZK: {0}")]
+    Zk(#[from] crate::zk::ZkError),
+
     /// The worker has died.
     #[error("Worker died")]
     WorkerDied,
@@ -63,6 +67,7 @@ impl SyncerError {
         match self {
             SyncerError::P2p(e) => e.is_fatal(),
             SyncerError::Store(e) => e.is_fatal(),
+            SyncerError::Zk(_) => false, // TODO: recheck after all is done this is correct
             SyncerError::WorkerDied | SyncerError::ChannelClosedUnexpectedly => true,
         }
     }
@@ -649,6 +654,7 @@ async fn try_init<S>(
 where
     S: Store,
 {
+    info!("===================================================================================");
     p2p.wait_connected_trusted().await?;
 
     if !*event_reported {
@@ -656,7 +662,12 @@ where
         *event_reported = true;
     }
 
-    let network_head = p2p.get_head_header().await?;
+
+    let zkhead = crate::zk::get_verified_network_head(&p2p).await?;
+    info!("zkhead: {:?}", zkhead.height());
+    info!("===================================================================================");
+
+    let network_head = zkhead; //p2p.get_head_header().await?;
 
     // If the network head and the store head have the same height,
     // then `insert` will error because of insertion contraints.

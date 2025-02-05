@@ -1,0 +1,11 @@
+[package]
+name = "work"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sp1-sdk = { version="4.0.1", default-features = false }
+sp1-primitives = "4.0.1"
+serde_json = "*"
+serde = "*"
+lumina-node.workspace = true

@@ -79,6 +79,9 @@ wasm-bindgen-test = "0.3.42"
 [package.metadata.docs.rs]
 targets = ["wasm32-unknown-unknown"]
 
+[features]
+zk-sync = ["lumina-node/zk-sync"]
+
 # Uncomment this if you need debug symbols in release.
 # Also check workspace's `Cargo.toml`.
 #[package.metadata.wasm-pack.profile.release]

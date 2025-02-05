@@ -17,6 +17,8 @@ mod syncer;
 #[cfg_attr(docsrs, doc(cfg(feature = "test-utils")))]
 pub mod test_utils;
 mod utils;
+#[cfg(feature = "zk-sync")]
+pub mod zk;
 
 #[cfg(all(target_arch = "wasm32", test))]
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
