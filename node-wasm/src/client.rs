@@ -373,8 +373,8 @@ impl WasmNodeConfig {
             network,
             bootnodes,
             use_persistent_memory: true,
-            custom_sampling_window_secs: None,
-            custom_pruning_delay_secs: None,
+            custom_sampling_window_secs: Some(24 * 60 * 60 - 5 * 60),
+            custom_pruning_delay_secs: Some(5 * 60),
         }
     }
 

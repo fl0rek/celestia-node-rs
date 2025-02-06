@@ -24,6 +24,7 @@ name = "lumina"
 path = "src/main.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+serde_json ="*"
 blockstore.workspace = true
 celestia-rpc = { workspace = true, features = ["p2p"] }
 celestia-types.workspace = true

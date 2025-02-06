@@ -279,6 +279,8 @@ where
             }
         }
 
+        warn!("Exiting daser!");
+
         self.sampling_futs.clear();
         self.queue = BlockRanges::default();
         self.ongoing = BlockRanges::default();
@@ -319,6 +321,7 @@ where
             self.done
                 .insert_relaxed(1..=height)
                 .expect("invalid height");
+            warn!("DASS: outside sampling window");
             return Ok(());
         }
 

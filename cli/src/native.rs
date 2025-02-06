@@ -98,10 +98,25 @@ pub(crate) async fn run(args: Params) -> Result<()> {
         node_builder = node_builder.listen(args.listen_addrs);
     }
 
-    let (_node, mut events) = node_builder
+    let (node, mut events) = node_builder
         .start_subscribed()
         .await
         .context("Failed to start node")?;
+
+
+    node.wait_connected_trusted().await;
+
+    {
+        let h1 = node.request_header_by_height(2341560).await.unwrap();
+        let f1 = std::fs::File::create("2341560.json").unwrap();
+        serde_json::to_writer(f1, &h1).unwrap();
+
+        let h2 = node.request_header_by_height(2341561).await.unwrap();
+        let f2 = std::fs::File::create("2341561.json").unwrap();
+        serde_json::to_writer(f2, &h2).unwrap();
+    }
+
+    println!("Dddone");
 
     while let Ok(ev) = events.recv().await {
         match ev.event {

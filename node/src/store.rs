@@ -51,6 +51,12 @@ pub struct SamplingMetadata {
     pub cids: Vec<Cid>,
 }
 
+impl SamplingMetadata {
+    pub fn len(&self) -> usize {
+        1 + self.cids.len() * 64
+    }
+}
+
 /// Sampling metadata for a block.
 ///
 /// This struct persists DAS-ing information in a header store for future reference.

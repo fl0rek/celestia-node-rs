@@ -49,6 +49,16 @@ struct ExtendedHeaderEntry {
     header: Vec<u8>,
 }
 
+static mut STORED_BYTES: usize = 0;
+
+static SIZES: std::sync::LazyLock<std::sync::RwLock<Vec<u16>>> = std::sync::LazyLock::new(|| std::sync::RwLock::new(vec![]));
+
+impl ExtendedHeaderEntry {
+    fn len(&self) -> usize {
+        self.header.len() + 32 + 8 
+    }
+}
+
 /// A [`Store`] implementation based on a `IndexedDB` browser database.
 #[derive(Debug)]
 pub struct IndexedDbStore {
@@ -207,6 +217,10 @@ impl IndexedDbStore {
             return Ok(());
         }
 
+        for h in headers.as_ref() {
+            SIZES.write().unwrap().push(h.dah.square_width());
+        }
+
         let tail = self
             .write_tx(
                 &[HEADER_STORE_NAME, RANGES_STORE_NAME],
@@ -227,6 +241,15 @@ impl IndexedDbStore {
         }
 
         self.header_added_notifier.notify_waiters();
+
+        //unsafe { tracing::info!("STORED: {}", humanize_bytes::humanize_bytes_binary!(STORED_BYTES)); }
+        { 
+            let sizes = SIZES.read().unwrap();
+            if sizes.len() > 0 {
+                let avg = sizes.iter().map(|v| *v as f64).sum::<f64>() / sizes.len() as f64;
+                tracing::info!("Current AVG: {avg}");
+            }
+        }
 
         Ok(())
     }
@@ -618,6 +641,10 @@ async fn insert_tx_op(
     .await?;
 
     for header in headers {
+        let mut header = header;
+        // TODO:  remote validator set/signatures
+        //header.commit.signatures  = Vec::new();
+        //header.validator_set = celestia_types::ValidatorSet::new(vec![], None);
         let hash = header.hash();
         let hash_index = header_store.index(HASH_INDEX_NAME)?;
         let jsvalue_hash_key = KeyRange::only(&to_value(&hash)?).map_err(rexie::Error::IdbError)?;
@@ -634,6 +661,9 @@ async fn insert_tx_op(
             hash,
             header: header.encode_vec(),
         };
+
+        //tracing::info!("Inserting {}", humanize_bytes::humanize_bytes_binary!(header_entry.len()));
+        //unsafe { STORED_BYTES += header_entry.len(); }
 
         let jsvalue_header = to_value(&header_entry)?;
 
@@ -662,10 +692,14 @@ async fn update_sampling_metadata_tx_op(
         return Err(StoreError::NotFound);
     }
 
+    let mut already_present = 0;
+
     let height_key = to_value(&height)?;
     let new_entry = match sampling_store.get(height_key.clone()).await? {
         Some(previous_entry) => {
             let mut value: SamplingMetadata = from_value(previous_entry)?;
+
+            already_present = value.len();
 
             value.status = status;
 
@@ -679,6 +713,8 @@ async fn update_sampling_metadata_tx_op(
         }
         None => SamplingMetadata { status, cids },
     };
+
+    //unsafe { STORED_BYTES += new_entry.len() - already_present };
 
     let metadata_jsvalue = to_value(&new_entry)?;
     sampling_store
@@ -725,6 +761,9 @@ async fn remove_last_tx_op(tx: &Transaction, _: ()) -> Result<u64> {
 
     let id = js_sys::Reflect::get(&header, &to_value("id")?)
         .map_err(|_| StoreError::StoredDataError("could not get header's DB id".into()))?;
+
+    let h : ExtendedHeaderEntry = from_value(header).unwrap();
+    //unsafe { STORED_BYTES -= h.len() }
 
     header_store.delete(id).await?;
 

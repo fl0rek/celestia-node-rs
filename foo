@@ -1,0 +1,363 @@
+let SessionLoad = 1
+let s:so_save = &g:so | let s:siso_save = &g:siso | setg so=0 siso=0 | setl so=-1 siso=-1
+let v:this_session=expand("<sfile>:p")
+silent only
+silent tabonly
+cd ~/dev/lumina
+if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
+  let s:wipebuf = bufnr('%')
+endif
+let s:shortmess_save = &shortmess
+if &shortmess =~ 'A'
+  set shortmess=aoOA
+else
+  set shortmess=aoO
+endif
+badd +69 node-wasm/src/client.rs
+badd +150 types/src/extended_header.rs
+badd +50 node-wasm/src/commands.rs
+badd +192 node-wasm/src/worker.rs
+badd +16 node/src/node.rs
+badd +30 Cargo.toml
+badd +28 types/src/data_availability_header.rs
+badd +20 types/src/blob/commitment.rs
+badd +49 types/Cargo.toml
+badd +29 node-wasm/Cargo.toml
+badd +92 node/Cargo.toml
+badd +24 node-wasm/src/utils.rs
+badd +0 ~/dev/lumina/node-wasm/src/ports.rs
+badd +37 node/src/store.rs
+badd +104 grpc/tests/tonic.rs
+badd +2 grpc/tests/utils/mod.rs
+badd +28 types/src/blob.rs
+badd +111 types/src/blob/msg_pay_for_blobs.rs
+badd +1 rpc/src/blob.rs
+badd +197 rpc/tests/blob.rs
+badd +33 node-wasm/js/package.json
+badd +2 node-wasm/js/.gitignore
+badd +94 .github/workflows/release-plz.yml
+badd +18 ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tendermint-0.40.0/src/block/commit.rs
+badd +25 ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/tendermint-0.40.0/src/block/header.rs
+badd +265 ~/dev/lumina/types/src/error.rs
+badd +175 node-wasm/src/error.rs
+badd +379 types/src/nmt.rs
+argglobal
+%argdel
+set stal=2
+tabnew +setlocal\ bufhidden=wipe
+tabnew +setlocal\ bufhidden=wipe
+tabrewind
+edit ~/dev/lumina/types/src/error.rs
+let s:save_splitbelow = &splitbelow
+let s:save_splitright = &splitright
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+wincmd _ | wincmd |
+vsplit
+2wincmd h
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
+wincmd w
+wincmd w
+let &splitbelow = s:save_splitbelow
+let &splitright = s:save_splitright
+wincmd t
+let s:save_winminheight = &winminheight
+let s:save_winminwidth = &winminwidth
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe '1resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 1resize ' . ((&columns * 94 + 142) / 284)
+exe '2resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 2resize ' . ((&columns * 94 + 142) / 284)
+exe 'vert 3resize ' . ((&columns * 94 + 142) / 284)
+exe 'vert 4resize ' . ((&columns * 94 + 142) / 284)
+argglobal
+balt types/src/nmt.rs
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=2
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+256
+normal! zo
+let s:l = 266 - ((16 * winheight(0) + 19) / 39)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 266
+normal! 05|
+wincmd w
+argglobal
+if bufexists(fnamemodify("types/Cargo.toml", ":p")) | buffer types/Cargo.toml | else | edit types/Cargo.toml | endif
+if &buftype ==# 'terminal'
+  silent file types/Cargo.toml
+endif
+balt ~/dev/lumina/types/src/error.rs
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=1
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+let s:l = 49 - ((25 * winheight(0) + 19) / 39)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 49
+normal! 0
+wincmd w
+argglobal
+if bufexists(fnamemodify("types/src/nmt.rs", ":p")) | buffer types/src/nmt.rs | else | edit types/src/nmt.rs | endif
+if &buftype ==# 'terminal'
+  silent file types/src/nmt.rs
+endif
+balt grpc/tests/tonic.rs
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=5
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+99
+normal! zo
+151
+normal! zo
+168
+normal! zo
+192
+normal! zo
+230
+normal! zo
+321
+normal! zo
+329
+normal! zo
+329
+normal! zo
+352
+normal! zo
+353
+normal! zo
+353
+normal! zo
+let s:l = 92 - ((55 * winheight(0) + 39) / 79)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 92
+normal! 036|
+wincmd w
+argglobal
+if bufexists(fnamemodify("types/src/nmt.rs", ":p")) | buffer types/src/nmt.rs | else | edit types/src/nmt.rs | endif
+if &buftype ==# 'terminal'
+  silent file types/src/nmt.rs
+endif
+balt types/src/blob/commitment.rs
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=5
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+99
+normal! zo
+151
+normal! zo
+168
+normal! zo
+192
+normal! zo
+230
+normal! zo
+321
+normal! zo
+329
+normal! zo
+329
+normal! zo
+352
+normal! zo
+353
+normal! zo
+353
+normal! zo
+let s:l = 379 - ((52 * winheight(0) + 39) / 79)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 379
+normal! 070|
+wincmd w
+4wincmd w
+exe '1resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 1resize ' . ((&columns * 94 + 142) / 284)
+exe '2resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 2resize ' . ((&columns * 94 + 142) / 284)
+exe 'vert 3resize ' . ((&columns * 94 + 142) / 284)
+exe 'vert 4resize ' . ((&columns * 94 + 142) / 284)
+tabnext
+edit Cargo.toml
+let s:save_splitbelow = &splitbelow
+let s:save_splitright = &splitright
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
+wincmd w
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
+let &splitbelow = s:save_splitbelow
+let &splitright = s:save_splitright
+wincmd t
+let s:save_winminheight = &winminheight
+let s:save_winminwidth = &winminwidth
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe '1resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 1resize ' . ((&columns * 142 + 142) / 284)
+exe '2resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 2resize ' . ((&columns * 142 + 142) / 284)
+exe '3resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 3resize ' . ((&columns * 141 + 142) / 284)
+exe '4resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 4resize ' . ((&columns * 141 + 142) / 284)
+argglobal
+balt types/src/extended_header.rs
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=1
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+let s:l = 34 - ((33 * winheight(0) + 19) / 39)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 34
+normal! 013|
+wincmd w
+argglobal
+if bufexists(fnamemodify("node-wasm/Cargo.toml", ":p")) | buffer node-wasm/Cargo.toml | else | edit node-wasm/Cargo.toml | endif
+if &buftype ==# 'terminal'
+  silent file node-wasm/Cargo.toml
+endif
+balt Cargo.toml
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=2
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+let s:l = 29 - ((21 * winheight(0) + 19) / 39)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 29
+normal! 063|
+wincmd w
+argglobal
+if bufexists(fnamemodify("types/Cargo.toml", ":p")) | buffer types/Cargo.toml | else | edit types/Cargo.toml | endif
+if &buftype ==# 'terminal'
+  silent file types/Cargo.toml
+endif
+balt node-wasm/Cargo.toml
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=1
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+let s:l = 41 - ((27 * winheight(0) + 19) / 39)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 41
+normal! 020|
+wincmd w
+argglobal
+if bufexists(fnamemodify("node-wasm/Cargo.toml", ":p")) | buffer node-wasm/Cargo.toml | else | edit node-wasm/Cargo.toml | endif
+if &buftype ==# 'terminal'
+  silent file node-wasm/Cargo.toml
+endif
+balt Cargo.toml
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=2
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+let s:l = 29 - ((10 * winheight(0) + 19) / 39)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 29
+normal! 063|
+wincmd w
+exe '1resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 1resize ' . ((&columns * 142 + 142) / 284)
+exe '2resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 2resize ' . ((&columns * 142 + 142) / 284)
+exe '3resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 3resize ' . ((&columns * 141 + 142) / 284)
+exe '4resize ' . ((&lines * 39 + 41) / 82)
+exe 'vert 4resize ' . ((&columns * 141 + 142) / 284)
+tabnext
+argglobal
+enew
+balt types/Cargo.toml
+setlocal fdm=expr
+setlocal fde=nvim_treesitter#foldexpr()
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+tabnext 1
+set stal=1
+if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'
+  silent exe 'bwipe ' . s:wipebuf
+endif
+unlet! s:wipebuf
+set winheight=1 winwidth=20
+let &shortmess = s:shortmess_save
+let s:sx = expand("<sfile>:p:r")."x.vim"
+if filereadable(s:sx)
+  exe "source " . fnameescape(s:sx)
+endif
+let &g:so = s:so_save | let &g:siso = s:siso_save
+set hlsearch
+doautoall SessionLoadPost
+unlet SessionLoad
+" vim: set ft=vim :

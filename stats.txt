@@ -1,0 +1,14 @@
+default: 17903 MB used out of 1139451 MB storage quota
+15 day: 10154 MB used out of 1139451 MB storage quota
+1 day: 1451 MB used out of 1139451 MB storage quota
+       796 MB used out of 1139451 MB storage quota
+1 H/1m: 927 MB used out of 1139451 MB storage quota
+
+
+1H/5min: 
+	34.2, 37.4, 35.2
+
+	500 header das: 4:36
+
+no signatures, no validator set:
+	20.9, 21.2, 18.9, 19.3
