@@ -1,23 +1,14 @@
 [package]
 name = "lumina-node-wasm"
 version = "0.8.1"
-edition = "2021"
-license = "Apache-2.0"
 description = "Browser compatibility layer for the Lumina node"
-authors = ["Eiger <hello@eiger.co>"]
-homepage = "https://www.eiger.co"
-repository = "https://github.com/eigerco/lumina"
-readme = "README.md"
-# crates.io is limited to 5 keywords and 5 categories
-keywords = ["blockchain", "celestia", "lumina", "node", "browser"]
-# Must be one of <https://crates.io/category_slugs>
-categories = [
-  "asynchronous",
-  "cryptography::cryptocurrencies",
-  "network-programming",
-  "wasm",
-  "web-programming",
-]
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
 crate-type = ["cdylib", "lib"]

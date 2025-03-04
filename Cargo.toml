@@ -2,6 +2,24 @@
 resolver = "2"
 members = ["cli", "grpc", "node", "node-wasm", "node-uniffi", "proto", "rpc", "types"]
 
+[workspace.package]
+authors = ["Eiger <hello@eiger.co>"]
+description = "Celestia data availability node implementation in Rust"
+edition = "2021"
+homepage = "https://www.eiger.co"
+license = "Apache-2.0"
+repository = "https://github.com/eigerco/lumina"
+# crates.io is limited to 5 keywords and 5 categories
+keywords = ["blockchain", "celestia", "lumina", "node"]
+# Must be one of <https://crates.io/category_slugs>
+categories = [
+  "asynchronous",
+  "command-line-utilities",
+  "cryptography::cryptocurrencies",
+  "network-programming",
+  "wasm",
+]
+
 [workspace.dependencies]
 blockstore = "0.7.1"
 lumina-node = { version = "0.9.1", path = "node" }
