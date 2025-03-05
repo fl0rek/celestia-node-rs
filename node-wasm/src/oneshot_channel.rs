@@ -59,6 +59,7 @@ where
 
     pub(crate) async fn recv(mut self) -> Result<T> {
         let data = self.rx.take().unwrap().await.context("Channel closed")?;
+        web_sys::console::log_1(&data);
         let msg = from_value(data).context("Deserialization failed")?;
 
         match msg {
