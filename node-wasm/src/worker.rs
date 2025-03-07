@@ -87,7 +87,7 @@ impl NodeWorker {
 
     pub async fn run(&mut self) -> Result<(), Error> {
         loop {
-            let (command, response_sender) = self.request_server.recv().await?;
+            let (client_id, command) = self.request_server.recv().await?;
 
             // StopNode needs special handling because `NodeWorkerInstance` needs to be consumed.
             if matches!(&command, NodeCommand::StopNode) {
@@ -123,10 +123,13 @@ impl NodeWorker {
                     }
                 },
             };
-
+            // TODO:
+            /*
             if let Err(e) = response_sender.send(response) {
+
                 error!("Failed to send response: {e}");
             }
+            */
         }
     }
 }

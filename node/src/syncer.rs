@@ -109,7 +109,7 @@ enum SyncerCmd {
 }
 
 /// Status of the synchronization.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SyncingInfo {
     /// Ranges of headers that are already synchronised
     pub stored_headers: BlockRanges,
