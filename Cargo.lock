@@ -3595,6 +3595,7 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "console_error_panic_hook",
+ "dashmap 5.5.3",
  "enum-as-inner",
  "futures",
  "gloo-timers 0.3.0",
@@ -3611,6 +3612,7 @@ dependencies = [
  "thiserror 1.0.69",
  "time",
  "tokio",
+ "tokio-stream",
  "tracing",
  "tracing-subscriber",
  "tracing-web",
@@ -5785,6 +5787,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]

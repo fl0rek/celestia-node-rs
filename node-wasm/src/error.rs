@@ -149,6 +149,12 @@ impl<T> From<tokio::sync::mpsc::error::SendError<T>> for Error {
     }
 }
 
+impl<T> From<tokio::sync::broadcast::error::SendError<T>> for Error {
+    fn from(value: tokio::sync::broadcast::error::SendError<T>) -> Error {
+        Error::from_display(value)
+    }
+}
+
 /// Utility to add more context to the [`Error`].
 pub trait Context<T> {
     /// Adds more context to the [`Error`].
