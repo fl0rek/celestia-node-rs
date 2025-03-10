@@ -1,5 +1,8 @@
+#![allow(unused_imports, unused_variables, dead_code)]
+
 use std::future::Future;
 
+use futures::stream::SelectAll;
 use js_sys::{Array, Function, Reflect};
 use serde::Serialize;
 use serde_wasm_bindgen::{from_value, to_value, Serializer};
@@ -10,9 +13,9 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{MessageEvent, MessagePort};
 
-use crate::multiplex::MultiplexSender;
 use crate::commands::{NodeCommand, WorkerResponse};
 use crate::error::{Context, Error, Result};
+use crate::multiplex::{Client, Server};
 use crate::utils::MessageEventExt;
 
 // Instead of supporting communication with just `MessagePort`, allow using any object which
@@ -38,209 +41,41 @@ impl From<MessagePort> for MessagePortLike {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ClientId(usize);
-
-pub(crate) enum ClientMessage {
-    Command { id: ClientId, command: NodeCommand },
-    AddConnection(JsValue),
-}
-
-struct ClientConnection {
-    port: MessagePortLike,
-    _onmessage: Closure<dyn Fn(MessageEvent)>,
-}
-
-impl ClientConnection {
-    fn new(
-        id: ClientId,
-        port_like_object: JsValue,
-        server_tx: mpsc::UnboundedSender<ClientMessage>,
-    ) -> Result<Self> {
-        let onmessage = Closure::new(move |ev: MessageEvent| {
-            if let Some(port) = ev.get_port() {
-                if let Err(e) = server_tx.send(ClientMessage::AddConnection(port)) {
-                    error!("port forwarding channel closed, shouldn't happen: {e}");
-                }
-            }
-
-            let command = match from_value(ev.data()) {
-                Ok(msg) => msg,
-                Err(e) => {
-                    error!("could not deserialise message from {id:?}: {e}");
-                    return;
-                }
-            };
-
-            if let Err(e) = server_tx.send(ClientMessage::Command { id, command }) {
-                error!("message forwarding channel closed, shouldn't happen: {e}");
-            }
-        });
-
-        let port = prepare_message_port(port_like_object, &onmessage)
-            .context("failed to setup port for ClientConnection")?;
-
-        Ok(ClientConnection {
-            port,
-            _onmessage: onmessage,
-        })
-    }
-
-    fn send(&self, message: &WorkerResponse) -> Result<()> {
-        let serializer = Serializer::json_compatible();
-        let message_value = message
-            .serialize(&serializer)
-            .context("could not serialise message")?;
-        self.port
-            .post_message(&message_value)
-            .context("could not send command to worker")?;
-        Ok(())
-    }
-}
-
-pub struct WorkerServer {
-    ports: Vec<ClientConnection>,
-    client_tx: mpsc::UnboundedSender<ClientMessage>,
-    client_rx: mpsc::UnboundedReceiver<ClientMessage>,
-}
-
-impl WorkerServer {
-    pub fn new() -> WorkerServer {
-        let (client_tx, client_rx) = mpsc::unbounded_channel();
-
-        WorkerServer {
-            ports: vec![],
-            client_tx,
-            client_rx,
-        }
-    }
-
-    pub async fn recv(&mut self) -> Result<(ClientId, NodeCommand)> {
-        loop {
-            match self
-                .client_rx
-                .recv()
-                .await
-                .expect("all of client connections should never close")
-            {
-                ClientMessage::Command { id, command } => {
-                    return Ok((id, command));
-                }
-                ClientMessage::AddConnection(port) => {
-                    let client_id = ClientId(self.ports.len());
-                    info!("Connecting client {client_id:?}");
-
-                    match ClientConnection::new(client_id, port, self.client_tx.clone()) {
-                        Ok(port) => self.ports.push(port),
-                        Err(e) => error!("Failed to setup ClientConnection: {e}"),
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn get_control_channel(&self) -> mpsc::UnboundedSender<ClientMessage> {
-        self.client_tx.clone()
-    }
-
-    pub fn respond_to(&self, client: ClientId, response: WorkerResponse) {
-        trace!("Responding to {client:?}");
-        if let Err(e) = self.ports[client.0].send(&response) {
-            error!("Failed to send response to client: {e}");
-        }
-    }
-}
+pub(crate) type WorkerServer = Server<NodeCommand, WorkerResponse>;
 
 pub struct WorkerClient {
-    port: MultiplexSender<NodeCommand, WorkerResponse>,
-    //response_channel: Mutex<mpsc::UnboundedReceiver<Result<WorkerResponse, serde_wasm_bindgen::Error>>>,
-    //_onmessage: Closure<dyn Fn(MessageEvent)>,
+    client: Client<NodeCommand, WorkerResponse>,
 }
 
 impl WorkerClient {
     pub fn new(object: JsValue) -> Result<Self> {
-        /*
-        let (response_tx, response_rx) = mpsc::unbounded_channel();
-
-        let onmessage = Closure::new(move |ev: MessageEvent| {
-            if let Err(e) = response_tx.send(from_value(ev.data())) {
-                error!("message forwarding channel closed, should not happen: {e}");
-            }
-        });
-
-        let port = prepare_message_port(object, &onmessage)
-            .context("failed to setup port for WorkerClient")?;
-
         Ok(WorkerClient {
-            port,
-            response_channel: Mutex::new(response_rx),
-            _onmessage: onmessage,
-        })
-*/
-
-        Ok(WorkerClient {
-            port: MultiplexSender::new(object)?
+            client: Client::start(object)?,
         })
     }
 
-    pub(crate) async fn add_connection_to_worker(&self, port: &JsValue) -> Result<()> {
-        todo!()
-        /*
-        let mut response_channel = self.response_channel.lock().await;
+    pub(crate) async fn add_connection_to_worker(&self, port: JsValue) -> Result<()> {
+        let response = self.client.send(NodeCommand::InternalPing, Some(port)).await?;
 
-        let command_value =
-            to_value(&NodeCommand::InternalPing).context("could not serialise message")?;
-
-        self.port
-            .post_message_with_transferable(&command_value, &Array::of1(port))
-            .context("could not transfer port")?;
-
-        let worker_response = response_channel
-            .recv()
-            .await
-            .expect("response channel should never drop")
-            .context("error adding connection")?;
+        let worker_response = response.await
+            .context("Response oneshot dropped, should not happen")?;
 
         if !worker_response.is_internal_pong() {
             Err(Error::new(&format!(
-                "invalid response, expected InternalPing got {worker_response:?}"
-            )))
+            "invalid response, expected InternalPing got {worker_response:?}"
+        )))
         } else {
             Ok(())
         }
-*/
     }
 
     pub(crate) async fn exec(&self, command: NodeCommand) -> Result<WorkerResponse> {
-        todo!()
-        /*
-        let mut response_channel = self.response_channel.lock().await;
-        let command_value = to_value(&command).context("could not serialise message")?;
-
-        self.port
-            .post_message(&command_value)
-            .context("could not post message")?;
-
-        let worker_response = response_channel
-            .recv()
+        let response = self.client.send(command, None).await?;
+        response
             .await
-            .expect("response channel should never drop")
-            .context("error executing command")?;
-
-        Ok(worker_response)
-*/
+            .context("Response oneshot dropped, should not happen")
     }
 }
-
-struct ResponseAwaiter<S> {
-    stream: S
-}
-
-impl<S> Future for ResponseAwaiter<S> {
-
-}
-
-
 
 // helper to hide slight differences in message passing between runtime.Port used by browser
 // extensions and everything else
@@ -290,23 +125,38 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn client_server() {
+        crate::utils::setup_logging();
+
+        let channel0 = MessageChannel::new().unwrap();
         let mut server = WorkerServer::new();
-        let tx = server.get_control_channel();
+        let port_channel = server.get_port_channel();
 
-        // pre-load response
         spawn_local(async move {
-            let channel = MessageChannel::new().unwrap();
+            let (request, responder) = server.recv().await.unwrap();
+            assert!(matches!(request, NodeCommand::IsRunning));
+            responder.send(WorkerResponse::IsRunning(false)).unwrap();
 
-            tx.send(ClientMessage::AddConnection(channel.port2().into()))
-                .unwrap();
+            let (request, responder) = server.recv().await.unwrap();
+            assert!(matches!(request, NodeCommand::InternalPing));
+            responder.send(WorkerResponse::InternalPong).unwrap();
 
-            let client0 = WorkerClient::new(channel.port1().into()).unwrap();
-            let response = client0.exec(NodeCommand::IsRunning).await.unwrap();
-            assert!(matches!(response, WorkerResponse::IsRunning(true)));
+            let (request, responder) = server.recv().await.unwrap();
+            assert!(matches!(request, NodeCommand::IsRunning));
+            responder.send(WorkerResponse::IsRunning(true)).unwrap();
         });
 
-        let (client, command) = server.recv().await.unwrap();
-        assert!(matches!(command, NodeCommand::IsRunning));
-        server.respond_to(client, WorkerResponse::IsRunning(true));
+        port_channel.send(channel0.port1().into()).unwrap();
+        let client0 = WorkerClient::new(channel0.port2().into()).unwrap();
+
+        let response = client0.exec(NodeCommand::IsRunning).await.unwrap();
+        assert!(matches!(response, WorkerResponse::IsRunning(false)));
+
+        let channel1 = MessageChannel::new().unwrap();
+        client0.add_connection_to_worker(channel1.port1().into()).await.unwrap();
+        let client1 = WorkerClient::new(channel1.port2().into()).unwrap();
+
+        let response = client1.exec(NodeCommand::IsRunning).await.unwrap();
+        assert!(matches!(response, WorkerResponse::IsRunning(true)));
+
     }
 }

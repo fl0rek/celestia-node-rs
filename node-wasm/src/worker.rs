@@ -8,7 +8,6 @@ use libp2p::{Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use thiserror::Error;
-use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
@@ -20,10 +19,10 @@ use lumina_node::events::{EventSubscriber, NodeEventInfo};
 use lumina_node::node::{Node, SyncingInfo};
 use lumina_node::store::{EitherStore, InMemoryStore, IndexedDbStore, SamplingMetadata};
 
+use crate::ports::WorkerServer;
 use crate::client::WasmNodeConfig;
 use crate::commands::{NodeCommand, SingleHeaderQuery, WorkerResponse};
 use crate::error::{Context, Error, Result};
-use crate::ports::{ClientMessage, WorkerServer};
 use crate::utils::random_id;
 use crate::wrapper::libp2p::NetworkInfoSnapshot;
 
@@ -56,7 +55,7 @@ pub struct NodeWorker {
     event_channel_name: String,
     node: Option<NodeWorkerInstance>,
     request_server: WorkerServer,
-    _control_channel: mpsc::UnboundedSender<ClientMessage>,
+    //_control_channel: mpsc::UnboundedSender<ClientMessage>,
 }
 
 struct NodeWorkerInstance {
@@ -71,30 +70,29 @@ impl NodeWorker {
         info!("Created lumina worker");
 
         let request_server = WorkerServer::new();
-        let control_channel = request_server.get_control_channel();
+        let port_channel = request_server.get_port_channel();
 
-        control_channel
-            .send(ClientMessage::AddConnection(port_like_object))
+        port_channel
+            .send(port_like_object)
             .expect("control channel should be ready to receive now");
 
         Self {
             event_channel_name: format!("NodeEventChannel-{}", random_id()),
             node: None,
             request_server,
-            _control_channel: control_channel,
         }
     }
 
     pub async fn run(&mut self) -> Result<(), Error> {
         loop {
-            let (client_id, command) = self.request_server.recv().await?;
+            let (command, responder) = self.request_server.recv().await?;
 
             // StopNode needs special handling because `NodeWorkerInstance` needs to be consumed.
             if matches!(&command, NodeCommand::StopNode) {
                 if let Some(node) = self.node.take() {
                     node.stop().await;
-                    if let Err(e) = response_sender.send(WorkerResponse::NodeStopped(())) {
-                        error!("Failed to send response: {e}");
+                    if responder.send(WorkerResponse::NodeStopped(())).is_err() {
+                        error!("Failed to send response: channel dropped");
                     }
                     continue;
                 }
@@ -123,13 +121,9 @@ impl NodeWorker {
                     }
                 },
             };
-            // TODO:
-            /*
-            if let Err(e) = response_sender.send(response) {
-
-                error!("Failed to send response: {e}");
+            if responder.send(response).is_err() {
+                error!("Failed to send response: channel dropped");
             }
-            */
         }
     }
 }

@@ -19,7 +19,7 @@ use crate::error::Result;
 use crate::wrapper::libp2p::NetworkInfoSnapshot;
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum NodeCommand {
     InternalPing,
     IsRunning,
@@ -60,14 +60,14 @@ pub(crate) enum NodeCommand {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) enum SingleHeaderQuery {
     Head,
     ByHash(Hash),
     ByHeight(u64),
 }
 
-#[derive(Serialize, Deserialize, Debug, EnumAsInner, Clone)]
+#[derive(Serialize, Deserialize, Debug, EnumAsInner)]
 pub(crate) enum WorkerResponse {
     InternalPong,
     NodeNotRunning,

@@ -104,7 +104,7 @@ impl NodeClient {
 
     /// Establish a new connection to the existing worker over provided port
     #[wasm_bindgen(js_name = addConnectionToWorker)]
-    pub async fn add_connection_to_worker(&self, port: &JsValue) -> Result<()> {
+    pub async fn add_connection_to_worker(&self, port: JsValue) -> Result<()> {
         self.worker.add_connection_to_worker(port).await
     }
 
