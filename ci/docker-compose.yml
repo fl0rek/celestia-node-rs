@@ -79,14 +79,26 @@ services:
   #     - credentials:/credentials
   #     - genesis:/genesis
 
+  light:
+    image: light
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: Dockerfile.light
+    ports:
+      - 26668:26658
+    volumes:
+      - credentials:/credentials
+      - genesis:/genesis
+
 volumes:
   # local volume where node's credentials can persist
   credentials:
     driver: local
     driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: './credentials'
+      type: "none"
+      o: "bind"
+      device: "./credentials"
   # a temporary fs where the genesis hash is announced
   genesis:
     driver_opts:
