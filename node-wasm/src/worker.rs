@@ -19,10 +19,10 @@ use lumina_node::events::{EventSubscriber, NodeEventInfo};
 use lumina_node::node::{Node, SyncingInfo};
 use lumina_node::store::{EitherStore, InMemoryStore, IndexedDbStore, SamplingMetadata};
 
-use crate::ports::WorkerServer;
 use crate::client::WasmNodeConfig;
 use crate::commands::{NodeCommand, SingleHeaderQuery, WorkerResponse};
 use crate::error::{Context, Error, Result};
+use crate::ports::WorkerServer;
 use crate::utils::random_id;
 use crate::wrapper::libp2p::NetworkInfoSnapshot;
 

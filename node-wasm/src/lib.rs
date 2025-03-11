@@ -4,7 +4,6 @@
 pub mod client;
 mod commands;
 pub mod error;
-mod multiplex;
 mod ports;
 pub mod utils;
 mod worker;
