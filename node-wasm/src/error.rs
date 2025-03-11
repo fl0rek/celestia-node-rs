@@ -11,7 +11,7 @@ use wasm_bindgen::{JsCast, JsValue};
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// An error that can cross the WASM ABI border.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Error(#[serde(with = "serde_wasm_bindgen::preserve")] JsValue);
 
 impl Error {

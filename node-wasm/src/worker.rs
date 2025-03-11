@@ -55,7 +55,6 @@ pub struct NodeWorker {
     event_channel_name: String,
     node: Option<NodeWorkerInstance>,
     request_server: WorkerServer,
-    //_control_channel: mpsc::UnboundedSender<ClientMessage>,
 }
 
 struct NodeWorkerInstance {

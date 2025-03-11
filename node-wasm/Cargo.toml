@@ -32,7 +32,6 @@ tendermint.workspace = true
 
 anyhow = "1.0.86"
 console_error_panic_hook = "0.1.7"
-dashmap = "5.5.3"
 enum-as-inner = "0.6.0"
 futures = "0.3.30"
 gloo-timers = "0.3.0"
