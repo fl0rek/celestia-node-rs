@@ -83,12 +83,22 @@ impl ClientConnection {
 
     fn send(&self, message: &WorkerResponse) -> Result<()> {
         let serializer = Serializer::json_compatible();
+        tracing::warn!("MM: {message:?}");
         let message_value = message
             .serialize(&serializer)
-            .context("could not serialise message")?;
-        self.port
-            .post_message(&message_value)
-            .context("could not send command to worker")?;
+            .context("could not serialise message");
+        /*
+        if let Err(e) = message_value {
+            web_sys::console::error_1(&e);
+            return Ok(());
+        }
+*/
+        tracing::error!("MV: {message_value:?}");
+        let r = self.port
+            .post_message(&message_value?)
+            .context("could not send command to worker");
+        tracing::info!("inport: {r:?}");
+        r?;
         Ok(())
     }
 }
@@ -164,6 +174,8 @@ impl WorkerClient {
         let (response_tx, response_rx) = mpsc::unbounded_channel();
 
         let onmessage = Closure::new(move |ev: MessageEvent| {
+            tracing::info!(">onmsg");
+            web_sys::console::log_1(&ev);
             if let Err(e) = response_tx.send(from_value(ev.data())) {
                 error!("message forwarding channel closed, should not happen: {e}");
             }
@@ -213,11 +225,13 @@ impl WorkerClient {
             .context("could not post message")?;
 
         loop {
+            tracing::info!("RR");
             let worker_response = response_channel
                 .recv()
                 .await
                 .expect("response channel should never drop")
                 .context("error executing command")?;
+            tracing::info!("RR: {worker_response:?}");
 
             // Skip InternalPong if requested command was not InternalPing.
             // We use this because ping is meant to be used with timeout but the server might

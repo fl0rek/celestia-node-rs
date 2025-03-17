@@ -180,3 +180,22 @@ impl<T> Context<T> for Option<T> {
         self.ok_or_else(|| Error::new(&context.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use lumina_utils::test_utils::async_test;
+    use serde_wasm_bindgen::{from_value, to_value};
+
+    #[async_test]
+    fn test_serialisation() {
+        let e0 = Error::new("test").with_context("foo");
+
+        let v = to_value(&e0).unwrap();
+
+        let e1 = from_value(v).unwrap();
+
+        assert_eq!(e0, e1);
+    }
+}

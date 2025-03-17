@@ -5,11 +5,15 @@ use tokio::sync::oneshot;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod counter;
+#[cfg(target_arch = "wasm32")]
+mod dns;
 mod fused_reusable_future;
 mod token;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use counter::Counter;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use dns::resolve_bootnode_addresses;
 pub(crate) use fused_reusable_future::FusedReusableFuture;
 pub(crate) use token::Token;
 

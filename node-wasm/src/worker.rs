@@ -113,7 +113,10 @@ impl NodeWorker {
                                 let _ = node.insert(instance);
                                 WorkerResponse::NodeStarted(Ok(()))
                             }
-                            Err(e) => WorkerResponse::NodeStarted(Err(e)),
+                            Err(e) => {
+                                tracing::error!("Failed: {e:?}");
+                                WorkerResponse::NodeStarted(Err(e))
+                            }
                         }
                     }
                     _ => {
@@ -130,7 +133,9 @@ impl NodeWorker {
 
 impl NodeWorkerInstance {
     async fn new(events_channel_name: &str, config: WasmNodeConfig) -> Result<Self> {
+        tracing::info!(">");
         let (node, events_sub) = config.into_node_builder().await?.start_subscribed().await?;
+        tracing::info!("<");
 
         let events_channel = BroadcastChannel::new(events_channel_name)
             .context("Failed to allocate BroadcastChannel")?;
