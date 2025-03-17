@@ -2,6 +2,8 @@
 use std::fmt::{self, Debug};
 use std::future::Future;
 
+use serde::{Serialize};
+use serde_wasm_bindgen::Serializer;
 use gloo_timers::future::TimeoutFuture;
 use js_sys::Math;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -216,4 +218,10 @@ pub(crate) async fn timeout<F: Future>(millis: u32, fut: F) -> Result<F::Output,
         _ = timeout => Err(()),
         res = fut => Ok(res),
     }
+}
+
+pub(crate) fn to_json_value<T: Serialize + ?Sized>(
+    value: &T,
+) -> Result<JsValue, serde_wasm_bindgen::Error> {
+    value.serialize(&Serializer::json_compatible())
 }

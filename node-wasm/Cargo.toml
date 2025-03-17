@@ -28,6 +28,7 @@ celestia-grpc = { workspace = true, features = ["wasm-bindgen"] }
 celestia-types = { workspace = true, features = ["wasm-bindgen"] }
 libp2p = { workspace = true, features = ["serde"] }
 lumina-node = { workspace = true, features = ["wasm-bindgen"] }
+lumina-utils = { workspace = true, features = ["executor"] }
 tendermint.workspace = true
 
 anyhow = "1.0.86"
@@ -78,6 +79,7 @@ web-sys = { version = "0.3.70", features = [
 wasm-bindgen-test.workspace = true
 celestia-rpc = { workspace = true, features = ["wasm-bindgen", "p2p"] }
 rexie = "0.6.2"
+lumina-utils = { workspace = true, features = ["test-utils"] }
 
 [package.metadata.docs.rs]
 targets = ["wasm32-unknown-unknown"]

@@ -188,14 +188,29 @@ mod tests {
     use lumina_utils::test_utils::async_test;
     use serde_wasm_bindgen::{from_value, to_value};
 
+    use crate::utils::to_json_value;
+
     #[async_test]
     fn test_serialisation() {
-        let e0 = Error::new("test").with_context("foo");
+        let e0 = Error::new("test").context("foo");
 
         let v = to_value(&e0).unwrap();
 
-        let e1 = from_value(v).unwrap();
+        let e1: Error = from_value(v).unwrap();
 
-        assert_eq!(e0, e1);
+        web_sys::console::log_2(&e0.0, &e1.0);
+        assert_eq!(e0.0, e1.0);
+    }
+
+    #[async_test]
+    fn test_serialisation_json() {
+        let e0 = Error::new("test").context("foo");
+
+        let v = to_json_value(&e0).unwrap();
+
+        let e1: Error = from_value(v).unwrap();
+
+        web_sys::console::log_2(&e0.0, &e1.0);
+        assert_eq!(e0.0, e1.0);
     }
 }
