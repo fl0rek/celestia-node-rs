@@ -12,7 +12,7 @@ use lumina_node::network;
 use lumina_node::node::{NodeBuilder, MIN_PRUNING_DELAY, MIN_SAMPLING_WINDOW};
 use lumina_node::store::{EitherStore, InMemoryStore, IndexedDbStore, SamplingMetadata};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 use wasm_bindgen::prelude::*;
 use web_sys::BroadcastChannel;
 
@@ -27,11 +27,11 @@ use crate::wrapper::libp2p::NetworkInfoSnapshot;
 use crate::wrapper::node::{PeerTrackerInfoSnapshot, SyncingInfoSnapshot};
 
 /// Config for the lumina wasm node.
-#[wasm_bindgen(inspectable, js_name = NodeConfig)]
+#[wasm_bindgen(inspectable, js_name = NodeConfig, getter_with_clone)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WasmNodeConfig {
     /// A network to connect to.
-    pub network: Network,
+    pub network: String,
     /// A list of bootstrap peers to connect to.
     #[wasm_bindgen(getter_with_clone)]
     pub bootnodes: Vec<String>,
@@ -273,6 +273,13 @@ impl NodeClient {
         response.into_blobs().check_variant()?
     }
 
+    #[wasm_bindgen]
+    pub async fn request_all_posts(&self, height: u64, topic: String) -> Result<()> {
+        let command = NodeCommand::RequestAllPosts { height, topic };
+        let response = self.worker.exec(command).await?;
+        Ok(())
+    }
+
     /// Get current header syncing info.
     #[wasm_bindgen(js_name = syncerInfo)]
     pub async fn syncer_info(&self) -> Result<SyncingInfoSnapshot> {
@@ -360,15 +367,17 @@ impl NodeClient {
 #[wasm_bindgen(js_class = NodeConfig)]
 impl WasmNodeConfig {
     /// Get the configuration with default bootnodes for provided network
-    pub fn default(network: Network) -> WasmNodeConfig {
-        let bootnodes = network::Network::from(network)
-            .canonical_bootnodes()
-            .map(|addr| addr.to_string())
-            .collect::<Vec<_>>();
+    pub fn default(network: JsValue) -> WasmNodeConfig {
+        /*
+                let bootnodes = network::Network::from(network)
+                    .canonical_bootnodes()
+                    .map(|addr| addr.to_string())
+                    .collect::<Vec<_>>();
+        */
 
         WasmNodeConfig {
-            network,
-            bootnodes,
+            network: network.as_string().unwrap_or("".to_string()),
+            bootnodes: vec![],
             use_persistent_memory: true,
             custom_sampling_window_secs: None,
             custom_pruning_delay_secs: None,
@@ -376,7 +385,8 @@ impl WasmNodeConfig {
     }
 
     pub(crate) async fn into_node_builder(self) -> Result<NodeBuilder<WasmBlockstore, WasmStore>> {
-        let network = network::Network::from(self.network);
+        let network = network::Network::try_from(self.network)
+            .map_err(|_| crate::error::Error::new("invalid network"))?;
         let network_id = network.id();
 
         let mut builder = if self.use_persistent_memory {

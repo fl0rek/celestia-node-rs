@@ -3,6 +3,7 @@
 use std::iter;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 mod commitment;
 mod msg_pay_for_blobs;
@@ -20,6 +21,57 @@ pub use celestia_proto::proto::blob::v1::BlobProto as RawBlob;
 pub use celestia_proto::proto::blob::v1::BlobTx as RawBlobTx;
 #[cfg(all(feature = "wasm-bindgen", target_arch = "wasm32"))]
 use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen(getter_with_clone)]
+pub struct Post {
+    pub cid: String,
+    pub data: String,
+}
+
+impl Post {
+    pub fn from_celestia(post: &[u8]) -> Option<Post> {
+        //let post = serialized; //&blob.data;
+        let hex_encoded = String::from_utf8(post.to_vec()).expect("hex utf8");
+        let decoded = hex::decode(&hex_encoded[2..]).expect("decoded");
+        for v in &decoded[..31] {
+            if *v != 0 {
+                //warn!("skip");
+                continue;
+            }
+        }
+        if &decoded[32..=33] == b"Qm" {
+            let cid = &decoded[32..32 + 46];
+            let cid_hash = bs58::decode(&cid[2..]);
+            let data = &decoded[32 + 46..];
+            let mut hasher = Sha256::new();
+            hasher.update(&data);
+            let hash = hasher.finalize();
+            let cid_ok = cid_hash.into_vec() == Ok(hash.to_vec());
+            let announce = Post {
+                cid: format!("Qm{}", String::from_utf8_lossy(&cid.to_vec())),
+                data: String::from_utf8_lossy(data).to_string(),
+            };
+
+            if cid_ok {
+                Some(announce)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+        /*
+                        println!("======================");
+                        println!(
+                            "${}: {}",
+                            String::from_utf8_lossy(cid),
+                            if cid_ok { "✅" } else { "❌" }
+                        );
+                        println!("{}", String::from_utf8_lossy(data));
+                        println!("======================");
+        */
+    }
+}
 
 /// Arbitrary data that can be stored in the network within certain [`Namespace`].
 // NOTE: We don't use the `serde(try_from)` pattern for this type

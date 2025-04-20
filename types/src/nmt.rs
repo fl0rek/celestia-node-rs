@@ -99,6 +99,22 @@ pub type Proof = nmt_rs::simple_merkle::proof::Proof<NamespacedSha2Hasher>;
 )]
 pub struct Namespace(nmt_rs::NamespaceId<NS_SIZE>);
 
+#[cfg_attr(all(feature = "wasm-bindgen", target_arch = "wasm32"), wasm_bindgen)]
+impl Namespace {
+    #[wasm_bindgen(constructor)]
+    pub fn new_js(ns: js_sys::Array) -> Result<Self> {
+        let mut topic: Vec<u8> = ns.into_iter().map(|b| b.as_f64().unwrap() as u8).collect();
+        let mut ns_len = topic.len();
+        let mut ns = Vec::with_capacity(10);
+        while ns_len != 10 {
+            ns.push(0);
+            ns_len += 1;
+        }
+        ns.append(&mut topic);
+        Namespace::new_v0(&ns)
+    }
+}
+
 impl Namespace {
     /// Primary reserved [`Namespace`] for the compact [`Share`]s with [`cosmos SDK`] transactions.
     ///

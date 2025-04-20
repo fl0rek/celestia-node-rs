@@ -741,6 +741,62 @@ dependencies = [
 ]
 
 [[package]]
+name = "bomboni_core"
+version = "0.1.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75bfcef989d7be7155d6d09a0eba8f9b5fdb5c2b33c6492e7fddbf618b338ae5"
+dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
+name = "bomboni_wasm"
+version = "0.1.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0087d35f2319294818d49c8b18436b2273d473e082bca3c44a0ab374473f06f"
+dependencies = [
+ "bomboni_wasm_core",
+ "bomboni_wasm_derive",
+ "js-sys",
+ "serde",
+ "serde-wasm-bindgen",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "bomboni_wasm_core"
+version = "0.1.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6196a5ae43a5498b08e5e1edca20a7111ff8d053d2b1fe65529eed727ed9ce7"
+dependencies = [
+ "bomboni_core",
+ "convert_case",
+ "darling",
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.90",
+]
+
+[[package]]
+name = "bomboni_wasm_derive"
+version = "0.1.64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c5d663109240dace3152b0c8aca5130515a4ad653b1c66028fd8536f06f4d11"
+dependencies = [
+ "bomboni_core",
+ "bomboni_wasm_core",
+ "darling",
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.90",
+]
+
+[[package]]
 name = "borsh"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -931,6 +987,7 @@ dependencies = [
  "bincode",
  "bitvec",
  "blockstore",
+ "bs58",
  "bytes",
  "celestia-proto",
  "cid",
@@ -938,6 +995,7 @@ dependencies = [
  "ed25519-consensus",
  "enum_dispatch",
  "getrandom",
+ "hex",
  "indoc",
  "js-sys",
  "leopard-codec",
@@ -1136,6 +1194,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1260,6 +1327,41 @@ dependencies = [
  "rand_core",
  "subtle-ng",
  "zeroize",
+]
+
+[[package]]
+name = "darling"
+version = "0.20.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc7f46116c46ff9ab3eb1597a45688b6715c6e628b5c133e288e709a29bcb4ee"
+dependencies = [
+ "darling_core",
+ "darling_macro",
+]
+
+[[package]]
+name = "darling_core"
+version = "0.20.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d00b9596d185e565c2207a0b01f8bd1a135483d02d9b7b0a54b11da8d53412e"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn 2.0.90",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.20.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc34b93ccb385b40dc71c6fceac4b2ad23662c7eeb248cf10d529b7e055b6ead"
+dependencies = [
+ "darling_core",
+ "quote",
+ "syn 2.0.90",
 ]
 
 [[package]]
@@ -2414,6 +2516,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ident_case"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
 name = "idna"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3528,6 +3636,7 @@ dependencies = [
  "backoff",
  "beetswap",
  "blockstore",
+ "bomboni_wasm",
  "bytes",
  "celestia-proto",
  "celestia-rpc",
@@ -5252,6 +5361,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_derive_internals"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
 name = "serde_json"
 version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6102,6 +6222,12 @@ name = "unicode-ident"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
 name = "unicode-width"

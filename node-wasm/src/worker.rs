@@ -241,6 +241,12 @@ impl NodeWorkerInstance {
 
     async fn process_command(&mut self, command: NodeCommand) -> WorkerResponse {
         match command {
+            NodeCommand::RequestAllPosts { height, topic } => {
+                if let Err(e) = self.node.request_all_posts(height, topic).await {
+                    tracing::error!("E: {e}");
+                }
+                WorkerResponse::InternalPong
+            }
             NodeCommand::IsRunning => WorkerResponse::IsRunning(true),
             NodeCommand::StartNode(_) => {
                 WorkerResponse::NodeStarted(Err(Error::new("Node already started")))

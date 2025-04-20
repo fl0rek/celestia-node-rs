@@ -40,6 +40,8 @@ serde_repr = "0.1.19"
 sha2 = "0.10.6"
 thiserror = "1.0.61"
 time = { version = "0.3.36", default-features = false }
+hex = "0.4.3"
+bs58 = "0.5.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = { version = "0.3.76", optional = true }

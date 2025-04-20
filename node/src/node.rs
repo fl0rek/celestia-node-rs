@@ -7,6 +7,8 @@ use std::ops::RangeBounds;
 use std::sync::Arc;
 use std::time::Duration;
 
+use wasm_bindgen::UnwrapThrowExt;
+
 use blockstore::Blockstore;
 use celestia_types::hash::Hash;
 use celestia_types::nmt::Namespace;
@@ -464,6 +466,24 @@ where
             Err(StoreError::NotFound) => Ok(None),
             Err(e) => Err(e.into()),
         }
+    }
+
+    pub async fn request_all_posts(&self, height: u64, topic: String) -> Result<()> {
+        let h = self.request_header_by_height(height).await?;
+        let ns = Namespace::new_v0(&topic.as_bytes()).unwrap_throw();
+        let blobs = self.request_all_blobs(&h, ns, None).await?;
+        let publisher = self.event_channel.publisher();
+        for blob in blobs {
+            if let Some(p) = celestia_types::blob::Post::from_celestia(&blob.data) {
+                publisher.send(NodeEvent::PostAnnounce {
+                    cid: p.cid,
+                    data: p.data,
+                    height,
+                    board: topic.clone(),
+                });
+            }
+        }
+        Ok(())
     }
 }
 

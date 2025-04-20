@@ -21,6 +21,10 @@ use crate::wrapper::libp2p::NetworkInfoSnapshot;
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum NodeCommand {
+    RequestAllPosts {
+        height: u64,
+        topic: String,
+    },
     InternalPing,
     IsRunning,
     StartNode(WasmNodeConfig),

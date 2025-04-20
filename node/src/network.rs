@@ -4,13 +4,18 @@ use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
 
+#[cfg(target_arch = "wasm32")]
+use bomboni_wasm::Wasm;
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
 
 /// Supported Celestia networks.
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+//#[cfg_attr(all(feature = "wasm-bindgen", target_arch = "wasm32"), wasm(wasm_abi))]
 pub enum Network {
     /// Celestia mainnet.
     #[default]
@@ -22,6 +27,17 @@ pub enum Network {
     /// Custom network.
     Custom(NetworkId),
 }
+
+/*
+//#[cfg(target_arch = "wasm32")]
+impl TryFrom<String> for Network {
+    type Error = ();
+
+    fn try_from(value: JsValue) -> Result<Self, Self::Error> {
+        return Network::from_str(&value);
+    }
+}
+*/
 
 /// Error for invalid network id.
 #[derive(Debug, Error)]
