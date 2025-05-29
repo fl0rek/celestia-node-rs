@@ -27,6 +27,7 @@ use tendermint_proto::Protobuf;
 use tokio::sync::{Mutex, MutexGuard};
 use tonic::body::BoxBody;
 use tonic::client::GrpcService;
+use tonic::transport::ClientTlsConfig;
 
 use crate::grpc::{Account, BroadcastMode, GrpcClient, StdError, TxStatus};
 use crate::{Error, Result};
@@ -415,7 +416,10 @@ where
     ) -> Result<Self> {
         let transport = tonic::transport::Endpoint::from_shared(url.into())
             .map_err(|e| Error::TransportError(e.to_string()))?
+            .tls_config(ClientTlsConfig::new().with_enabled_roots())
+            .expect("tls ok")
             .connect_lazy();
+
         Self::new(transport, account_address, account_pubkey, signer).await
     }
 }

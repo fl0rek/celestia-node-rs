@@ -9,7 +9,6 @@ use ecdsa::SigningKey;
 use lumina_node::blockstore::InMemoryBlockstore;
 use lumina_node::events::NodeEvent;
 use lumina_node::network::Network;
-use lumina_node::network::NetworkId;
 use lumina_node::node::MIN_PRUNING_DELAY;
 use lumina_node::node::MIN_SAMPLING_WINDOW;
 use lumina_node::store::InMemoryStore;
@@ -17,8 +16,12 @@ use lumina_node::Node;
 use lumina_node::NodeError;
 use tracing::{error, info, warn};
 
-const MAMMOTH_GRPC: &str = "https://global.grpc.mamochain.com";
-const MAMMOTH_BOOTNODE: &str = "/dnsaddr/da-bridge-0.par.mamochain.com/p2p/12D3KooWNc3hDtzLvyKj8xbcE3SFMRy4uX5EojCScCuqYRrz4tzS";
+//const MAMMOTH_GRPC: &str = "https://global.grpc.mamochain.com";
+//const ARABICA_GRPC: &str = "https://grpc.celestia-arabica-11.com";
+const MOCHA_GRPC: &str = "grpc://celestia-testnet-consensus.itrocket.net:9090";
+//const MOCHA_GRPC: &str = "https://grpc-mocha.pops.one:443";
+
+//const MAMMOTH_BOOTNODE: &str = "/dnsaddr/da-bridge-0.par.mamochain.com/p2p/12D3KooWNc3hDtzLvyKj8xbcE3SFMRy4uX5EojCScCuqYRrz4tzS";
 const MAMMOTH_ADDR: &str = "celestia13ragg08622j6lm5ej52hhuvynntmvkz7gdk5re";
 //const MAMMOTH_PUBKEY: &str = "AlqDIu+WltdaxgO79Ig7X7IQ/h3Ve806qWhOevWQeOEl";
 const MAMMOTH_PRIVKEY: &str = "e42e07120e2a4b5f24789c68f5aebab0384ddc657ec232d2bde8cfb83dd400e6";
@@ -47,11 +50,12 @@ impl App {
 
     async fn submit_blobs(&self, blobs: &[Blob]) -> Result<(), GrpcError> {
         let addr: Address = MAMMOTH_ADDR.parse().expect("valid addr");
-        //let vk = VerifyingKey::from_sec1_bytes( &hex::decode(MAMMOTH_PUBKEY).expect("valid key encoding"),) .expect("valid key");
         let sk = SigningKey::from_slice(&hex::decode(MAMMOTH_PRIVKEY).expect("valid key encoding"))
             .expect("valid key");
         let vk = sk.verifying_key().clone();
-        let txclient = TxClient::with_url(MAMMOTH_GRPC, &addr, vk, sk).await?;
+        let txclient = TxClient::with_url(MOCHA_GRPC, &addr, vk, sk).await?;
+
+        info!("CLient ok");
 
         let info = txclient.submit_blobs(blobs, TxConfig::default()).await?;
 
@@ -77,12 +81,11 @@ pub(crate) async fn run(params: Params) {
     let (node, mut events) = Node::builder()
         .store(store)
         .blockstore(blockstore)
-        .network(Network::Custom(
-            NetworkId::new("mamo-1").expect("networkid"),
-        ))
+        //.network(Network::Custom( NetworkId::new("mamo-1").expect("networkid"),))
+        .network(Network::Mocha)
         .sampling_window(MIN_SAMPLING_WINDOW)
         .pruning_delay(MIN_PRUNING_DELAY)
-        .bootnodes([MAMMOTH_BOOTNODE.parse().expect("valid bootnode")])
+        //.bootnodes([MAMMOTH_BOOTNODE.parse().expect("valid bootnode")])
         .start_subscribed()
         .await
         .expect("to work");
@@ -92,10 +95,9 @@ pub(crate) async fn run(params: Params) {
     let app = App::new(node, namespace);
 
     let b =
-        Blob::new(namespace, b"bar".to_vec(), celestia_types::AppVersion::V3).expect("valid blob");
-    info!("===");
+        Blob::new(namespace, b"bar".to_vec(), celestia_types::AppVersion::V1).expect("valid blob");
+
     app.submit_blobs(&[b]).await.expect("submit ok");
-    info!("===");
 
     while let Ok(ev) = events.recv().await {
         match ev.event {
