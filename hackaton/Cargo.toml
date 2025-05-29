@@ -1,0 +1,17 @@
+[package]
+name = "hackaton"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lumina-node.workspace = true
+celestia-types.workspace = true
+celestia-grpc.workspace = true
+
+clap = { version = "4.5.39", features = ["derive"]}
+tokio = "1.45.1"
+tracing = "0.1.41"
+tracing-appender = "0.2.3"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+hex = "0.4.3"
+ecdsa = "0.16.9"
