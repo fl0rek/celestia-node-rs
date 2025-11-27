@@ -1,7 +1,7 @@
 services:
   validator:
     image: validator
-    platform: "linux/amd64"
+    #platform: "linux/amd64"
     build:
       context: .
       dockerfile: Dockerfile.validator
@@ -24,7 +24,7 @@ services:
 
   grpcwebproxy:
     image: grpcwebproxy
-    platform: "linux/amd64"
+    #platform: "linux/amd64"
     build:
       context: .
       dockerfile: Dockerfile.grpcwebproxy
@@ -34,7 +34,7 @@ services:
 
   node-0:
     image: node
-    platform: "linux/amd64"
+    #platform: "linux/amd64"
     build:
       context: .
       dockerfile: Dockerfile.node
@@ -55,7 +55,7 @@ services:
 
   node-1:
     image: node
-    platform: "linux/amd64"
+    #platform: "linux/amd64"
     build:
       context: .
       dockerfile: Dockerfile.node
@@ -69,7 +69,7 @@ services:
 
   node-2:
     image: node
-    platform: "linux/amd64"
+    #platform: "linux/amd64"
     build:
       context: .
       dockerfile: Dockerfile.node
@@ -103,7 +103,7 @@ services:
   # transactions eviction cases. Thus it has low TTL and block size.
   validator-eviction-testing:
     image: validator
-    platform: "linux/amd64"
+    #platform: "linux/amd64"
     # we want the first validator to create keys for the main devnet accounts
     # before this one is even started. That way we don't race over keys creation,
     # and all keys are still funded on this network

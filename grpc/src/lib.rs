@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 mod abci_proofs;
-pub(crate) mod boxed;
+pub mod boxed;
 mod builder;
 mod client;
 mod error;
@@ -16,8 +16,9 @@ mod tx;
 pub mod uniffi_client;
 mod utils;
 
-pub use crate::builder::GrpcClientBuilder;
 pub use crate::client::GrpcClient;
+pub use crate::client::GrpcClientBuilder;
+pub use crate::client::grpc_client_builder;
 pub use crate::error::{Error, GrpcClientBuilderError, Result};
 pub use crate::signer::DocSigner;
 pub use crate::tx::{SignDoc, TxConfig, TxInfo};

@@ -2,22 +2,17 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::time::Duration;
 
-use bytes::Bytes;
 use k256::ecdsa::{SigningKey, VerifyingKey};
 use signature::Keypair;
-use tonic::body::Body as TonicBody;
-use tonic::codegen::Service;
-use tonic::metadata::MetadataMap;
 use zeroize::Zeroizing;
 
 use crate::boxed::{BoxedTransport, boxed};
 use crate::client::AccountState;
 use crate::grpc::Context;
 use crate::signer::BoxedDocSigner;
-use crate::utils::CondSend;
 use crate::{DocSigner, GrpcClient, GrpcClientBuilderError};
 
-use imp::build_transport;
+pub(crate) use imp::build_transport;
 
 #[derive(Default)]
 enum TransportSetup {
@@ -27,6 +22,7 @@ enum TransportSetup {
     BoxedTransport(BoxedTransport),
 }
 
+/*
 /// Builder for [`GrpcClient`]
 ///
 /// Note that TLS configuration is governed using `tls-*-roots` feature flags.
@@ -39,6 +35,7 @@ pub struct GrpcClientBuilder {
     binary_metadata: Vec<(String, Vec<u8>)>,
     metadata_map: Option<MetadataMap>,
 }
+*/
 
 enum SignerKind {
     Signer((VerifyingKey, BoxedDocSigner)),
@@ -46,6 +43,7 @@ enum SignerKind {
     PrivKeyHex(Zeroizing<String>),
 }
 
+/*
 impl GrpcClientBuilder {
     /// Create a new, empty builder.
     pub fn new() -> Self {
@@ -165,6 +163,7 @@ impl GrpcClientBuilder {
         Ok(GrpcClient::new(transport, signer_config, context))
     }
 }
+*/
 
 impl TryFrom<SignerKind> for AccountState {
     type Error = GrpcClientBuilderError;
@@ -203,11 +202,13 @@ impl fmt::Debug for SignerKind {
     }
 }
 
+/*
 impl fmt::Debug for GrpcClientBuilder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("GrpcClientBuilder { .. }")
     }
 }
+*/
 
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(any(feature = "tls-native-roots", feature = "tls-webpki-roots"))]
@@ -216,7 +217,7 @@ mod imp {
 
     use tonic::transport::{ClientTlsConfig, Endpoint};
 
-    pub(super) fn build_transport(url: String) -> Result<BoxedTransport, GrpcClientBuilderError> {
+    pub(crate) fn build_transport(url: String) -> Result<BoxedTransport, GrpcClientBuilderError> {
         let tls_config = ClientTlsConfig::new().with_enabled_roots();
 
         let channel = Endpoint::from_shared(url)?
@@ -235,7 +236,7 @@ mod imp {
 
     use tonic::transport::Endpoint;
 
-    pub(super) fn build_transport(url: String) -> Result<BoxedTransport, GrpcClientBuilderError> {
+    pub(crate) fn build_transport(url: String) -> Result<BoxedTransport, GrpcClientBuilderError> {
         if url
             .split_once(':')
             .is_some_and(|(scheme, _)| scheme == "https")
@@ -254,7 +255,7 @@ mod imp {
 #[cfg(target_arch = "wasm32")]
 mod imp {
     use super::*;
-    pub(super) fn build_transport(url: String) -> Result<BoxedTransport, GrpcClientBuilderError> {
+    pub(crate) fn build_transport(url: String) -> Result<BoxedTransport, GrpcClientBuilderError> {
         Ok(boxed(tonic_web_wasm_client::Client::new(url)))
     }
 }

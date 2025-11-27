@@ -5,6 +5,7 @@ members = [
   "client",
   "grpc",
   "grpc/grpc-macros",
+  "builder-macro",
   "node",
   "node-wasm",
   "node-uniffi",

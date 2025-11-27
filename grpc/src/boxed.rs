@@ -14,20 +14,20 @@ use crate::utils::CondSend;
 
 dyn_clone::clone_trait_object!(AbstractTransport);
 
-type BoxedResponse = http::Response<BoxedBody>;
-type BoxedError = Box<dyn StdError + Sync + Send + 'static>;
-type BoxedResponseFuture =
+pub type BoxedResponse = http::Response<BoxedBody>;
+pub type BoxedError = Box<dyn StdError + Sync + Send + 'static>;
+pub type BoxedResponseFuture =
     Pin<Box<dyn ConditionalSendFuture<Output = Result<BoxedResponse, BoxedError>> + 'static>>;
 
-pub(crate) struct BoxedTransport {
+pub struct BoxedTransport {
     inner: Box<dyn AbstractTransport + Send + Sync>,
 }
 
-pub(crate) struct BoxedBody {
+pub struct BoxedBody {
     inner: Box<dyn AbstractBody + Unpin + Send + 'static>,
 }
 
-pub(crate) trait ConditionalSendFuture: Future + CondSend {}
+pub trait ConditionalSendFuture: Future + CondSend {}
 
 trait AbstractBody {
     fn poll_frame_inner(
@@ -130,7 +130,7 @@ impl Service<http::Request<TonicBody>> for BoxedTransport {
     }
 }
 
-pub(crate) fn boxed<T, B>(transport: T) -> BoxedTransport
+pub fn boxed<T, B>(transport: T) -> BoxedTransport
 where
     B: http_body::Body<Data = Bytes> + Send + Unpin + 'static,
     <B as http_body::Body>::Error: StdError + Sync + Send,

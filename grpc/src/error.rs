@@ -113,6 +113,10 @@ pub enum GrpcClientBuilderError {
     #[error("Transport not set")]
     TransportNotSet,
 
+    /// Multiple transports have been set
+    #[error("Multiple transports have been set")]
+    MultipleTransportsSet,
+
     /// Invalid private key.
     #[error("Invalid private key")]
     InvalidPrivateKey,

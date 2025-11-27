@@ -50,6 +50,8 @@ tonic = { workspace = true, features = ["codegen"] }
 tracing.workspace = true
 uniffi = { workspace = true, optional = true, features = ["tokio"] }
 zeroize = "1.8"
+bon = "3.8.1"
+nested-struct = { version = "0.1", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true, features = ["time"] }
@@ -81,7 +83,7 @@ wasm-bindgen-test.workspace = true
 [features]
 default = ['tls-native-roots']
 wasm-bindgen = ["celestia-types/wasm-bindgen", "dep:js-sys", "dep:wasm-bindgen", "dep:wasm-bindgen-futures"]
-uniffi = ["dep:async-trait", "dep:uniffi", "dep:serde_json", "celestia-types/uniffi"]
+uniffi = ["dep:async-trait", "dep:uniffi", "dep:serde_json", "celestia-types/uniffi", "dep:nested-struct"]
 # Add system trust roots to `rustls` in `tonic`.
 #
 # Selecting this feature enables TLS support in grpc client.

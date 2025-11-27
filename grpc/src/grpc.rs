@@ -71,7 +71,7 @@ impl Context {
 
     /// Appends a binary metadata entry to the map. Ignores duplicate values.
     ///
-    /// For binary methadata, key must end with `-bin`.
+    /// For binary metadata, key must end with `-bin`.
     pub(crate) fn append_metadata_bin(
         &mut self,
         key: &str,
@@ -87,7 +87,7 @@ impl Context {
     }
 
     /// Appends whole metadata map to the current metadata map.
-    pub(crate) fn append_metadata_map(&mut self, metadata: &MetadataMap) {
+    pub(crate) fn extend_metadata(&mut self, metadata: &MetadataMap) {
         for key_and_value in metadata.iter() {
             match key_and_value {
                 KeyAndValueRef::Ascii(key, val) => {
@@ -102,7 +102,7 @@ impl Context {
 
     /// Merges the other context into self.
     pub(crate) fn extend(&mut self, other: &Context) {
-        self.append_metadata_map(&other.metadata);
+        self.extend_metadata(&other.metadata);
         self.timeout = match (self.timeout, other.timeout) {
             (None, None) => None,
             (Some(t), None) => Some(t),
@@ -198,8 +198,8 @@ impl<Response, Error> AsyncGrpcCall<Response, Error> {
     }
 
     /// Append a metadata map to the grpc request.
-    pub fn metadata_map(mut self, metadata: MetadataMap) -> Self {
-        self.context.append_metadata_map(&metadata);
+    pub fn extend_metadata(mut self, metadata: MetadataMap) -> Self {
+        self.context.extend_metadata(&metadata);
         self
     }
 

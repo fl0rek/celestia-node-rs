@@ -4,7 +4,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use blockstore::cond_send::CondSend;
+use bon::{Builder, bon};
+use celestia_grpc::boxed::{BoxedTransport, boxed};
+use celestia_grpc::grpc_client_builder::{self, SetAccount, SetTransport};
 use celestia_grpc::{GrpcClient, GrpcClientBuilder};
+use celestia_rpc::client::{RpcClientBuilder, rpc_client_builder};
 use celestia_rpc::{Client as RpcClient, HeaderClient};
 use http::Request;
 use tonic::body::Body as TonicBody;
@@ -13,6 +17,7 @@ use tonic::metadata::MetadataMap;
 
 use crate::blob::BlobApi;
 use crate::blobstream::BlobstreamApi;
+use crate::client::client_builder::{IsUnset, State};
 use crate::fraud::FraudApi;
 use crate::header::HeaderApi;
 use crate::share::ShareApi;
@@ -83,6 +88,7 @@ pub(crate) struct ClientInner {
     chain_id: tendermint::chain::Id,
 }
 
+/*
 /// A builder for [`Client`].
 #[derive(Debug, Default)]
 pub struct ClientBuilder {
@@ -91,6 +97,7 @@ pub struct ClientBuilder {
     timeout: Option<Duration>,
     grpc_builder: Option<GrpcClientBuilder>,
 }
+*/
 
 impl ClientInner {
     pub(crate) fn grpc(&self) -> Result<&GrpcClient> {
@@ -113,10 +120,186 @@ impl ClientInner {
     }
 }
 
+struct ClientBuilder2<GS, RS>
+where
+    GS: grpc_client_builder::State,
+    RS: rpc_client_builder::State,
+{
+    grpc_builder: GrpcClientBuilder<GS>,
+    grpc_set: bool,
+    rpc_builder: RpcClientBuilder<RS>,
+}
+
+impl<GS, RS> ClientBuilder2<GS, RS>
+where
+    GS: grpc_client_builder::State,
+    RS: rpc_client_builder::State,
+{
+    async fn new() -> ClientBuilder2<grpc_client_builder::Empty, rpc_client_builder::Empty> {
+        ClientBuilder2 {
+            grpc_builder: Some(GrpcClient::builder()),
+            rpc_builder: RpcClient::builder(),
+        }
+    }
+
+    async fn build(self) -> Result<Client>
+    where
+        RS::Url: rpc_client_builder::IsSet,
+    {
+        let rpc = self.rpc_builder.build().await;
+        let grpc = self.grpc_builder.build();
+        //self.grpc_builder.map(|b| b.build()).transpose()?;
+
+        todo!()
+    }
+
+    /// Set signer and its public key.
+    pub fn signer<S>(
+        mut self,
+        pubkey: VerifyingKey,
+        signer: S,
+    ) -> ClientBuilder2<SetAccount<GS>, RS>
+    where
+        S: DocSigner + Sync + Send + 'static,
+        GS::Account: IsUnset,
+    {
+        let grpc_builder = self.grpc_builder.pubkey_and_signer(pubkey, signer);
+        ClientBuilder2 {
+            grpc_builder,
+            rpc_builder: self.rpc_builder,
+        }
+    }
+
+    /// Set the gRPC endpoint.
+    ///
+    /// # Note
+    ///
+    /// In WASM the endpoint needs to support gRPC-Web.
+    pub fn grpc_url(mut self, url: &str) -> Result<ClientBuilderInternal<SetTransport<GS>, S>>
+    where
+        GS::Transport: IsUnset,
+    {
+        Ok(ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.url(url)?,
+            __unsafe_private_phantom: std::marker::PhantomData,
+            __unsafe_private_named: self.__unsafe_private_named,
+        })
+    }
+
+    pub fn grpc_transport<B, T>(
+        mut self,
+        transport: T,
+    ) -> Result<ClientBuilderInternal<SetTransport<GS>, S>>
+    where
+        B: http_body::Body<Data = Bytes> + Send + Unpin + 'static,
+        <B as http_body::Body>::Error: StdError + Send + Sync,
+        T: Service<Request<TonicBody>, Response = http::Response<B>>
+            + Send
+            + Sync
+            + Clone
+            + 'static,
+        <T as Service<Request<TonicBody>>>::Error: StdError + Send + Sync + 'static,
+        <T as Service<Request<TonicBody>>>::Future: CondSend + 'static,
+        GS::Transport: IsUnset,
+    {
+        Ok(ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.transport(transport),
+            ..self
+        })
+    }
+}
+
+/*
+impl<S> ClientBuilderInternal<grpc_client_builder::Empty, S>
+where
+    S: client_builder_internal::IsComplete,
+{
+    async fn build(self) -> Result<Client> {
+        let ClientBuilder2 {
+            grpc_builder,
+            rpc_url,
+            rpc_auth_token,
+            timeout,
+        } = self.build_internal();
+        let rpc = RpcClient::builder()
+            .url(&rpc_url)
+            .maybe_auth_token(rpc_auth_token.as_deref())
+            .maybe_connect_timeout(timeout)
+            .maybe_request_timeout(timeout)
+            .build()
+            .await?;
+
+        let grpc = grpc_builder.map(|b| b.build()).transpose()?;
+
+        todo!()
+    }
+}
+*/
+
+#[bon]
 impl Client {
     /// Returns `ClientBuilder`.
-    pub fn builder() -> ClientBuilder {
-        ClientBuilder::new()
+    #[builder(on(String, into))]
+    pub async fn new<GS>(
+        #[builder(field)] grpc_builder: Option<GrpcClientBuilder<GS>>,
+        /*
+        #[builder(setters(vis="", name = grpc_transport_internal))] grpc_transport: Option<
+            BoxedTransport,
+        >,
+        */
+        rpc_url: String,
+        rpc_auth_token: Option<String>,
+        timeout: Option<Duration>,
+    ) -> Result<Self>
+    where
+        GS: grpc_client_builder::State,
+        GS::Transport: grpc_client_builder::IsSet,
+        GS::Timeout: grpc_client_builder::IsUnset,
+    {
+        let grpc = if let Some(mut grpc_builder) = grpc_builder {
+            let client = grpc_builder.maybe_timeout(timeout).build()?;
+            Some(client)
+        } else {
+            None
+        };
+        let pubkey = grpc
+            .as_ref()
+            .map(|grpc| grpc.get_account_pubkey())
+            .flatten();
+
+        let rpc = RpcClient::builder()
+            .url(&rpc_url)
+            .maybe_auth_token(rpc_auth_token.as_deref())
+            .maybe_connect_timeout(timeout)
+            .maybe_request_timeout(timeout)
+            .build()
+            .await?;
+
+        let head = rpc.header_network_head().await?;
+        head.validate()?;
+
+        if let Some(grpc) = &grpc {
+            if &grpc.chain_id().await? != head.chain_id() {
+                return Err(Error::ChainIdMissmatch);
+            }
+        }
+
+        let inner = Arc::new(ClientInner {
+            rpc,
+            grpc,
+            pubkey,
+            chain_id: head.chain_id().to_owned(),
+        });
+
+        Ok(Client {
+            inner: inner.clone(),
+            blob: BlobApi::new(inner.clone()),
+            header: HeaderApi::new(inner.clone()),
+            share: ShareApi::new(inner.clone()),
+            fraud: FraudApi::new(inner.clone()),
+            blobstream: BlobstreamApi::new(inner.clone()),
+            state: StateApi::new(inner.clone()),
+        })
     }
 
     /// Returns chain id of the network.
@@ -165,6 +348,85 @@ impl Client {
     }
 }
 
+/*
+impl<GS, S> ClientBuilderInternal<GS, S>
+where
+    GS: grpc_client_builder::State,
+    S: client_builder_internal::State,
+{
+    /// Set the gRPC endpoint.
+    ///
+    /// # Note
+    ///
+    /// In WASM the endpoint needs to support gRPC-Web.
+    pub fn grpc_url(mut self, url: &str) -> Result<ClientBuilderInternal<SetTransport<GS>, S>>
+    where
+        GS::Transport: IsUnset,
+    {
+        Ok(ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.url(url)?,
+            __unsafe_private_phantom: std::marker::PhantomData,
+            __unsafe_private_named: self.__unsafe_private_named,
+        })
+    }
+
+    pub fn grpc_transport<B, T>(
+        mut self,
+        transport: T,
+    ) -> Result<ClientBuilderInternal<SetTransport<GS>, S>>
+    where
+        B: http_body::Body<Data = Bytes> + Send + Unpin + 'static,
+        <B as http_body::Body>::Error: StdError + Send + Sync,
+        T: Service<Request<TonicBody>, Response = http::Response<B>>
+            + Send
+            + Sync
+            + Clone
+            + 'static,
+        <T as Service<Request<TonicBody>>>::Error: StdError + Send + Sync + 'static,
+        <T as Service<Request<TonicBody>>>::Future: CondSend + 'static,
+        GS::Transport: IsUnset,
+    {
+        Ok(ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.transport(transport),
+            ..self
+        })
+    }
+}
+
+impl<GS, S> ClientBuilderInternal<GS, S>
+where
+    GS: grpc_client_builder::State,
+    S: client_builder_internal::State,
+{
+    /// Appends ascii metadata to all requests made by the client.
+    pub fn grpc_metadata(mut self, key: &str, value: &str) -> Self {
+        ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.metadata(key, value),
+            ..self
+        }
+    }
+
+    /// Appends binary metadata to all requests made by the client.
+    ///
+    /// Keys for binary metadata must have `-bin` suffix.
+    pub fn grpc_metadata_bin(mut self, key: &str, value: &[u8]) -> Self {
+        ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.metadata_bin(key, value),
+            ..self
+        }
+    }
+
+    /// Sets the initial metadata map that will be attached to all requests made by the client.
+    pub fn grpc_metadata_extend(mut self, metadata: MetadataMap) -> Self {
+        ClientBuilderInternal {
+            grpc_builder: self.grpc_builder.metadata_extend(metadata),
+            ..self
+        }
+    }
+}
+*/
+
+/*
 impl ClientBuilder {
     /// Returns a new builder.
     pub fn new() -> ClientBuilder {
@@ -326,6 +588,7 @@ impl ClientBuilder {
         })
     }
 }
+*/
 
 impl Debug for Client {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

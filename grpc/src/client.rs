@@ -1,13 +1,21 @@
+use std::error::Error as StdError;
 use std::fmt;
 use std::sync::Arc;
 
 use ::tendermint::chain::Id;
+use bon::bon;
+use bytes::Bytes;
 use celestia_types::any::IntoProtobufAny;
-use k256::ecdsa::VerifyingKey;
+use k256::ecdsa::{SigningKey, VerifyingKey};
 use lumina_utils::time::Interval;
 use prost::Message;
+use signature::Keypair;
 use std::time::Duration;
 use tokio::sync::{Mutex, MutexGuard, OnceCell};
+use tonic::body::Body as TonicBody;
+use tonic::codegen::Service;
+use tonic::metadata::MetadataMap;
+use zeroize::Zeroizing;
 
 use celestia_grpc_macros::grpc_method;
 use celestia_proto::celestia::blob::v1::query_client::QueryClient as BlobQueryClient;
@@ -34,15 +42,17 @@ use celestia_types::state::{
 use celestia_types::{AppVersion, Blob, ExtendedHeader};
 
 use crate::abci_proofs::ProofChain;
-use crate::boxed::BoxedTransport;
-use crate::builder::GrpcClientBuilder;
+use crate::boxed::{BoxedTransport, boxed};
+use crate::builder::build_transport;
+use crate::client::grpc_client_builder::{Empty, SetAccount};
 use crate::grpc::{
     AsyncGrpcCall, BroadcastMode, ConfigResponse, Context, GasEstimate, GasInfo, GetTxResponse,
     TxPriority, TxStatus, TxStatusResponse,
 };
 use crate::signer::{BoxedDocSigner, sign_tx};
 use crate::tx::TxInfo;
-use crate::{Error, Result, TxConfig};
+use crate::utils::CondSend;
+use crate::{DocSigner, Error, GrpcClientBuilderError, Result, TxConfig};
 
 // source https://github.com/celestiaorg/celestia-core/blob/v1.43.0-tm-v0.34.35/pkg/consts/consts.go#L19
 const BLOB_TX_TYPE_ID: &str = "BLOB";
@@ -105,26 +115,162 @@ struct GrpcClientInner {
     context: Context,
 }
 
+#[derive(Default)]
+enum TransportSetup {
+    #[default]
+    Unset,
+    EndpointUrl(String),
+    BoxedTransport(BoxedTransport),
+}
+
+use grpc_client_builder::{IsUnset, SetTransport, State};
+
+impl<S> GrpcClientBuilder<S>
+where
+    S: State,
+{
+    pub fn url(
+        self,
+        url: &str,
+    ) -> Result<GrpcClientBuilder<SetTransport<S>>, GrpcClientBuilderError>
+    where
+        S::Transport: IsUnset,
+    {
+        let transport = build_transport(url.to_string())?;
+        Ok(self.transport_internal(transport))
+    }
+
+    /// Create a gRPC client builder using provided prepared transport
+    pub fn transport<B, T>(self, transport: T) -> GrpcClientBuilder<SetTransport<S>>
+    where
+        B: http_body::Body<Data = Bytes> + Send + Unpin + 'static,
+        <B as http_body::Body>::Error: StdError + Send + Sync,
+        T: Service<http::Request<TonicBody>, Response = http::Response<B>>
+            + Send
+            + Sync
+            + Clone
+            + 'static,
+        <T as Service<http::Request<TonicBody>>>::Error: StdError + Send + Sync + 'static,
+        <T as Service<http::Request<TonicBody>>>::Future: CondSend + 'static,
+        S::Transport: IsUnset,
+    {
+        self.transport_internal(boxed(transport))
+    }
+
+    /// Appends ascii metadata to all requests made by the client.
+    pub fn metadata(mut self, key: &str, value: &str) -> GrpcClientBuilder<S> {
+        self.context.append_metadata(key, value);
+        self
+    }
+
+    /// Appends binary metadata to all requests made by the client.
+    ///
+    /// Keys for binary metadata must have `-bin` suffix.
+    pub fn metadata_bin(mut self, key: &str, value: &[u8]) -> GrpcClientBuilder<S> {
+        self.context.append_metadata_bin(key, value);
+        self
+    }
+
+    /// Sets the initial metadata map that will be attached to all the requests made by the client.
+    pub fn metadata_extend(mut self, metadata: MetadataMap) -> GrpcClientBuilder<S> {
+        self.context.extend_metadata(&metadata);
+        self
+    }
+
+    /// Add signer and a public key
+    pub fn pubkey_and_signer<Signer>(
+        self,
+        account_pubkey: VerifyingKey,
+        signer: Signer,
+    ) -> GrpcClientBuilder<SetAccount<S>>
+    where
+        Signer: DocSigner + 'static,
+        S::Account: IsUnset,
+    {
+        let signer = BoxedDocSigner::new(signer);
+        self.account_state(AccountState::new(account_pubkey, signer))
+    }
+
+    /// Add signer and associated public key
+    pub fn signer_keypair<Signer>(self, signer: Signer) -> GrpcClientBuilder<SetAccount<S>>
+    where
+        Signer: DocSigner + Keypair<VerifyingKey = VerifyingKey> + 'static,
+        S::Account: IsUnset,
+    {
+        let pubkey = signer.verifying_key();
+        self.pubkey_and_signer(pubkey, signer)
+    }
+
+    /// Set signer from a raw private key.
+    pub fn private_key(
+        self,
+        bytes: &[u8],
+    ) -> Result<GrpcClientBuilder<SetAccount<S>>, GrpcClientBuilderError>
+    where
+        S::Account: IsUnset,
+    {
+        let signing_key =
+            SigningKey::from_slice(bytes).map_err(|_| GrpcClientBuilderError::InvalidPrivateKey)?;
+        let pubkey = signing_key.verifying_key().to_owned();
+        let signer = BoxedDocSigner::new(signing_key);
+        Ok(self.account_state(AccountState::new(pubkey, signer)))
+    }
+
+    /// Set signer from a hex formatted private key.
+    pub fn private_key_hex(
+        self,
+        string: &str,
+    ) -> Result<GrpcClientBuilder<SetAccount<S>>, GrpcClientBuilderError>
+    where
+        S::Account: IsUnset,
+    {
+        let bytes = Zeroizing::new(
+            hex::decode(string.trim()).map_err(|_| GrpcClientBuilderError::InvalidPrivateKey)?,
+        );
+        self.private_key(&bytes)
+    }
+}
+
+impl Default for GrpcClientBuilder<Empty> {
+    fn default() -> Self {
+        GrpcClient::builder()
+    }
+}
+
+#[bon]
 impl GrpcClient {
     /// Create a new client wrapping given transport
+    #[builder(start_fn = builder)]
+    #[builder(builder_type(vis = "pub"))]
+    #[builder(state_mod(vis = "pub"))]
     pub(crate) fn new(
-        transport: BoxedTransport,
-        account: Option<AccountState>,
-        context: Context,
-    ) -> Self {
-        Self {
+        #[builder(field)] context: Context,
+        #[builder(setters(vis = "", name = account_state))] account: Option<AccountState>,
+        #[builder(setters(vis = "", name = transport_internal))] transport: BoxedTransport,
+        /// Url doc
+        //#[builder(with = |url: impl Into<String>| url.into() )]
+        //url: Option<String>,
+        timeout: Option<Duration>,
+    ) -> Result<Self, GrpcClientBuilderError> {
+        /*
+        let transport = match (transport, url) {
+            (Some(transport), None) => transport,
+            (None, Some(url)) => build_transport(url.into())?,
+            (Some(_), Some(_)) => {
+                return Err(GrpcClientBuilderError::MultipleTransportsSet);
+            }
+            (None, None) => return Err(GrpcClientBuilderError::TransportNotSet),
+        };
+        */
+        let context = Context { timeout, ..context };
+        Ok(Self {
             inner: Arc::new(GrpcClientInner {
                 transport,
                 account,
                 chain_state: OnceCell::new(),
                 context,
             }),
-        }
-    }
-
-    /// Create a builder for [`GrpcClient`] connected to `url`
-    pub fn builder() -> GrpcClientBuilder {
-        GrpcClientBuilder::new()
+        })
     }
 
     // cosmos.auth

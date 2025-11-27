@@ -724,6 +724,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "builder-macro"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "tonic",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -794,6 +805,7 @@ version = "0.2.0"
 dependencies = [
  "async-stream",
  "blockstore",
+ "bon",
  "bytes",
  "celestia-grpc",
  "celestia-proto",
@@ -825,6 +837,7 @@ name = "celestia-grpc"
 version = "0.8.0"
 dependencies = [
  "async-trait",
+ "bon",
  "bytes",
  "celestia-grpc-macros",
  "celestia-proto",
@@ -842,6 +855,7 @@ dependencies = [
  "js-sys",
  "k256",
  "lumina-utils",
+ "nested-struct",
  "prost",
  "rand 0.8.5",
  "send_wrapper 0.6.0",
@@ -3849,6 +3863,12 @@ dependencies = [
  "smallvec",
  "unsigned-varint 0.7.2",
 ]
+
+[[package]]
+name = "nested-struct"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4e13f2903b7b332271fca33dcbbd958824cd91feb9ed65f5bbdf7658f5e1837"
 
 [[package]]
 name = "netlink-packet-core"

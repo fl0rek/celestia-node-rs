@@ -5,10 +5,10 @@
 //! one using [`jsonrpsee`] crate directly.
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use self::native::{Client, ClientBuilder};
+pub use self::native::*;
 
 #[cfg(all(target_arch = "wasm32", feature = "wasm-bindgen"))]
-pub use self::wasm::{Client, ClientBuilder};
+pub use self::wasm::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod native {
@@ -49,11 +49,13 @@ mod native {
         ///
         /// Please note that currently the celestia-node supports only 'http' and 'ws'.
         /// For a secure connection you have to hide it behind a proxy.
-        #[builder]
+        #[builder(state_mod(vis = "pub"))]
         pub async fn new(
             /// Url used to connect to the RPC server
+            #[builder(into)]
             url: &str,
             /// Auth token
+            #[builder(into)]
             auth_token: Option<&str>,
             /// Timeout for establishing the connection, supported with WebSockets only
             connect_timeout: Option<Duration>,
@@ -228,11 +230,13 @@ mod wasm {
         /// doesn't allow setting headers with websocket. If you want to
         /// use the websocket client anyway, you can use the one from the
         /// `jsonrpsee` directly, but you need a node with `--rpc.skip-auth`.
-        #[builder]
+        #[builder(state_mod(vis = "pub"))]
         pub async fn new(
             /// Url used to connect to the RPC server
+            #[builder(into)]
             url: &str,
             /// Auth token
+            #[builder(into)]
             auth_token: Option<&str>,
             /// Timeout for establishing the connection, unsupported on wasm
             connect_timeout: Option<Duration>,

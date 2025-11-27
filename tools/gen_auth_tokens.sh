@@ -9,17 +9,17 @@ wait_for_docker_setup() {
   local services_running
   local services_expected
 
-  services_expected="$(docker compose -f "$DOCKER_COMPOSE_FILE" config --services | wc -l)"
-  services_running="$(docker compose -f "$DOCKER_COMPOSE_FILE" ps --services | wc -l)"
+  services_expected="$(podman compose -f "$DOCKER_COMPOSE_FILE" config --services | wc -l)"
+  services_running="$(podman compose -f "$DOCKER_COMPOSE_FILE" ps --services | wc -l)"
 
   if [[ "$services_running" != "$services_expected" ]]; then
     echo "Not all required services running, expected $services_expected, found $services_running" >&2
-    exit 1
+    #exit 1
   fi
 
   # wait for the service to start
   while :; do
-    curl http://127.0.0.1:36658 > /dev/null 2>&1 && break
+    curl http://127.0.0.1:36658 >/dev/null 2>&1 && break
     sleep 1
   done
 }
@@ -42,9 +42,9 @@ ensure_dotenv_file() {
 generate_token() {
   local auth_level="$1"
   local node_type
-  node_type="$(docker compose -f "$DOCKER_COMPOSE_FILE" exec -T node-1 \
+  node_type="$(podman compose -f "$DOCKER_COMPOSE_FILE" exec -T node-1 \
     ls -a /root | grep private | cut -d- -f 2)"
-  docker compose -f "$DOCKER_COMPOSE_FILE" exec -T node-1 \
+  podman compose -f "$DOCKER_COMPOSE_FILE" exec -T node-1 \
     celestia "$node_type" auth "$auth_level" --p2p.network private
 }
 

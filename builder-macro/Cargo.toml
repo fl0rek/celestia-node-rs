@@ -1,0 +1,22 @@
+[package]
+name = "builder-macro"
+version = "0.1.0"
+edition.workspace = true
+license = "Apache-2.0"
+description = "Derive macro for creating builder patterns with runtime validation"
+authors = ["Eiger <hello@eiger.co>"]
+homepage = "https://www.eiger.co"
+repository = "https://github.com/eigerco/lumina"
+rust-version = "1.85"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.35"
+syn = { version = "2.0.87", features = ["full", "extra-traits"] }
+proc-macro2 = "1.0.88"
+
+[dev-dependencies]
+tonic = { workspace = true, features = ["channel"] }
+anyhow = "1"
