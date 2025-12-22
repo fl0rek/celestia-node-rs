@@ -522,6 +522,12 @@ where
         debug!("Peer discovered: {peer_id}");
     }
 
+    pub(crate) fn peer_maybe_blacklisted(&mut self, peer_id: &PeerId) {
+        if self.peer_tracker.blacklist_peer_id(peer_id) {
+            debug!("Peer blacklisted: {peer_id}")
+        }
+    }
+
     fn on_peer_connected(&mut self, peer_id: &PeerId, connection_id: ConnectionId) {
         debug!("Peer connected: {peer_id}");
         self.peer_tracker.add_connection(peer_id, connection_id);

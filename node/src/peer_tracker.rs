@@ -48,6 +48,7 @@ pub(crate) struct Peer {
     id: PeerId,
     connections: HashMap<ConnectionId, ConnectionInfo>,
     protected: HashSet<u32>,
+    blacklisted: bool,
     trusted: bool,
     archival: bool,
     node_kind: NodeKind,
@@ -95,6 +96,7 @@ impl Peer {
             id,
             connections: HashMap::new(),
             protected: HashSet::new(),
+            blacklisted: false,
             trusted: false,
             archival: false,
             node_kind: NodeKind::Unknown,
@@ -197,6 +199,23 @@ impl PeerTracker {
                 true
             }
             Entry::Occupied(_) => false,
+        }
+    }
+
+    /// Blacklists a peer ID.
+    pub(crate) fn blacklist_peer_id(&mut self, peer_id: &PeerId) -> bool {
+        match self.peers.entry(*peer_id) {
+            Entry::Occupied(mut peer) => {
+                let previously_blacklisted = peer.get().blacklisted;
+                peer.get_mut().blacklisted = true;
+                !previously_blacklisted
+            }
+            Entry::Vacant(entry) => {
+                let mut peer = Peer::new(*peer_id);
+                peer.blacklisted = true;
+                entry.insert(peer);
+                true
+            }
         }
     }
 

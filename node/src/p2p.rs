@@ -1006,6 +1006,9 @@ where
                 for peer_id in add_peers {
                     self.swarm.peer_maybe_discovered(&peer_id);
                 }
+                for peer_id in blacklist_peers {
+                    self.swarm.peer_maybe_blacklisted(&peer_id);
+                }
             }
         }
     }

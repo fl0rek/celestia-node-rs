@@ -34,7 +34,7 @@ pub struct PoolTracker<S> {
     subjective_head: Option<u64>,
     /// Header store
     store: Arc<S>,
-
+    /// Pending headers tasks
     new_headers_tasks:
         FuturesUnordered<BoxFuture<'static, Result<ExtendedHeader, HeaderTaskError>>>,
 }
@@ -322,7 +322,7 @@ where
 
                     let wrong_peers: Vec<PeerId> = candidates
                         .values()
-                        .flat_map(|pool| pool.into_iter().cloned())
+                        .flat_map(|pool| pool.iter().cloned())
                         .collect();
 
                     tracing::warn!(
